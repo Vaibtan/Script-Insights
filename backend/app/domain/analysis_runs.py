@@ -19,3 +19,4 @@ class AnalysisRunRecord:
     title: str | None
     script_text: str
     status: RunStatus
+    failure_message: str | None = None

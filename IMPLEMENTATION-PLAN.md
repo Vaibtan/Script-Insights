@@ -130,21 +130,21 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 
 ### Slice 2: Normalize Text Into A Canonical Script Schema
 
-- [ ] RED: add an integration test proving a submitted text script becomes a normalized structure with scenes, dialogue blocks, and warnings
-- [ ] GREEN: implement the first `ScriptNormalizer` path for raw text
-- [ ] REFACTOR: isolate normalization helpers and source span mapping
+- [x] RED: add an integration test proving a submitted text script becomes a normalized structure with scenes, dialogue blocks, and warnings
+- [x] GREEN: implement the first `ScriptNormalizer` path for raw text
+- [x] REFACTOR: isolate normalization helpers and source span mapping
 
 ### Slice 3: Return A Summary From The First Agent
 
-- [ ] RED: add a test proving a completed run returns a structured summary with evidence spans
-- [ ] GREEN: implement the first DSPy summary program, stub LM wiring, and result serialization
-- [ ] REFACTOR: extract `LLMGateway` and `DSPyProgramRegistry` boundaries
+- [x] RED: add a test proving a completed run returns a structured summary with evidence spans
+- [x] GREEN: implement the first DSPy summary program, stub LM wiring, and result serialization
+- [x] REFACTOR: extract `LLMGateway` and `DSPyProgramRegistry` boundaries
 
 ### Slice 4: Add Emotion Analysis
 
-- [ ] RED: add a test proving the result includes dominant emotions, valence or arousal metadata, and an emotional arc
-- [ ] GREEN: implement the DSPy emotion program and response mapping
-- [ ] REFACTOR: share evidence and confidence mapping utilities
+- [x] RED: add a test proving the result includes dominant emotions, valence or arousal metadata, and an emotional arc
+- [x] GREEN: implement the DSPy emotion program and response mapping
+- [x] REFACTOR: share evidence and confidence mapping utilities
 
 ### Slice 5: Add Engagement Scoring
 
