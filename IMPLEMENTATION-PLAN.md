@@ -124,9 +124,9 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 
 ### Slice 1: Submit A Text Script For Analysis
 
-- [ ] RED: add a contract test proving `POST /api/v1/analysis/runs` accepts pasted text and returns `202` with stable identifiers plus an explicit contract version
-- [ ] GREEN: implement the minimal submission route, persistence for a new run, and inline execution mode for tests
-- [ ] REFACTOR: extract a `RunSubmissionService` behind the route
+- [x] RED: add a contract test proving `POST /api/v1/analysis/runs` accepts pasted text and returns `202` with stable identifiers plus an explicit contract version
+- [x] GREEN: implement the minimal submission route, persistence for a new run, and inline execution mode for tests
+- [x] REFACTOR: extract a `RunSubmissionService` behind the route
 
 ### Slice 2: Normalize Text Into A Canonical Script Schema
 
