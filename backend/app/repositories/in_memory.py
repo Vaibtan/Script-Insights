@@ -31,6 +31,19 @@ class InMemoryAnalysisRunRepository(AnalysisRunRepository):
         self._runs[run_id] = updated
         return updated
 
+    def list_by_script(self, script_id: UUID) -> tuple[AnalysisRunRecord, ...]:
+        runs = [run for run in self._runs.values() if run.script_id == script_id]
+        return tuple(sorted(runs, key=lambda item: item.created_at, reverse=True))
+
+    def list_queued(self, limit: int | None = None) -> tuple[AnalysisRunRecord, ...]:
+        runs = sorted(
+            (run for run in self._runs.values() if run.status == RunStatus.QUEUED),
+            key=lambda item: item.created_at,
+        )
+        if limit is not None:
+            runs = runs[:limit]
+        return tuple(runs)
+
 
 class InMemoryAnalysisArtifactRepository(AnalysisArtifactRepository):
     def __init__(self) -> None:

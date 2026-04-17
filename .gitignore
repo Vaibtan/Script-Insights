@@ -1,13 +1,10 @@
-# Python
 __pycache__/
+*/__pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
-
-# Node / frontend
 node_modules/
 .next/
-
-# Editor / OS
 .DS_Store
 Thumbs.db
+.env

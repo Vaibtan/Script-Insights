@@ -18,11 +18,14 @@ class RunSubmissionService:
     def submit(self, command: SubmitAnalysisRunCommand) -> AnalysisRunHandle:
         run = AnalysisRunRecord(
             run_id=uuid4(),
-            script_id=uuid4(),
+            script_id=command.script_id or uuid4(),
             revision_id=uuid4(),
             title=command.title,
             script_text=command.script_text,
             status=RunStatus.QUEUED,
+            source_type=command.source_type,
+            source_document_name=command.source_document_name,
+            source_warnings=command.source_warnings,
         )
         self.repository.save(run)
         self.dispatcher.dispatch(run)

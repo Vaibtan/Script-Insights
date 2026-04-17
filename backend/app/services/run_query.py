@@ -25,4 +25,8 @@ class RunQueryService:
             normalized_script=artifact.normalized_script if artifact is not None else None,
             summary=artifact.summary if artifact is not None else None,
             emotion=artifact.emotion if artifact is not None else None,
+            engagement=artifact.engagement if artifact is not None else None,
+            recommendations=artifact.recommendations if artifact is not None else (),
+            cliffhanger=artifact.cliffhanger if artifact is not None else None,
+            warnings=artifact.warnings if artifact is not None else (),
         )

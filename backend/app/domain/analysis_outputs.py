@@ -29,3 +29,24 @@ class EmotionResult:
     arousal: float
     emotional_arc: tuple[EmotionArcPoint, ...]
     evidence_spans: tuple[EvidenceSpan, ...]
+
+
+@dataclass(frozen=True)
+class EngagementResult:
+    overall_score: float
+    factors: dict[str, float]
+    rationale: str
+
+
+@dataclass(frozen=True)
+class Recommendation:
+    category: str
+    suggestion: str
+    rationale: str
+
+
+@dataclass(frozen=True)
+class CliffhangerResult:
+    moment_text: str
+    why_it_works: str
+    evidence_spans: tuple[EvidenceSpan, ...]

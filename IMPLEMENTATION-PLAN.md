@@ -44,75 +44,75 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 
 ### Backend API
 
-- [ ] `POST /api/v1/analysis/runs`
+- [x] `POST /api/v1/analysis/runs`
   Purpose: submit pasted text or a PDF upload for analysis
-- [ ] `GET /api/v1/analysis/runs/{run_id}`
+- [x] `GET /api/v1/analysis/runs/{run_id}`
   Purpose: poll run status and fetch the versioned final result payload using the externally visible async run identifier
-- [ ] `GET /api/v1/scripts/{script_id}/runs?revision_id=...&status=...`
+- [x] `GET /api/v1/scripts/{script_id}/runs?revision_id=...&status=...`
   Purpose: list run history for a script across revisions, with optional filters for revision and status
-- [ ] `GET /api/v1/scripts/{script_id}/compare?base_run_id=...&target_run_id=...`
+- [x] `GET /api/v1/scripts/{script_id}/compare?base_run_id=...&target_run_id=...`
   Purpose: compare two selected runs from the same script lineage, typically representing two revisions, and return deltas
 
 ### Frontend Routes
 
-- [ ] `/`
+- [x] `/`
   Purpose: paste text or upload PDF and start analysis
-- [ ] `/runs/[runId]`
+- [x] `/runs/[runId]`
   Purpose: view analysis dashboard for one run
-- [ ] `/scripts/[scriptId]/history`
+- [x] `/scripts/[scriptId]/history`
   Purpose: browse run history for a script, filter by revision or status, and reopen prior runs
-- [ ] `/scripts/[scriptId]/compare`
+- [x] `/scripts/[scriptId]/compare`
   Purpose: compare two selected runs from the same script lineage
 
 ## Deep Modules To Build
 
-- [ ] `ScriptNormalizer`
+- [x] `ScriptNormalizer`
   Input adapters for raw text and extracted PDF text, outputting one canonical script schema
-- [ ] `AnalysisWorkflow`
+- [x] `AnalysisWorkflow`
   Orchestrates multi-agent execution, retries, partial failures, and aggregation behind one interface
 - [ ] `LLMGateway`
   Provider abstraction for Groq-backed calls and future fallback models
-- [ ] `DSPyProgramRegistry`
+- [x] `DSPyProgramRegistry`
   Owns DSPy signatures and programs for summary, emotion, engagement, suggestions, and cliffhanger analysis
-- [ ] `AnalysisEvaluator`
+- [x] `AnalysisEvaluator`
   Validates schema correctness, evidence grounding, score bounds, and partial-result acceptance
-- [ ] `RevisionComparisonService`
+- [x] `RevisionComparisonService`
   Computes metric deltas, changed recommendations, changed evidence, and revision lineage metadata between two selected runs
 
 ## Domain Model Checklist
 
-- [ ] `scripts`
+- [x] `scripts`
   Stable script identity across revisions
-- [ ] `script_revisions`
+- [x] `script_revisions`
   Revision lineage, input source type, and normalization metadata
-- [ ] `normalized_scripts`
+- [x] `normalized_scripts`
   Canonical scenes, dialogue turns, characters, and source spans persisted per revision for grounding, reruns, and compare flows
-- [ ] `source_documents`
+- [x] `source_documents`
   Uploaded files and extraction provenance
-- [ ] `analysis_runs`
+- [x] `analysis_runs`
   Durable async job or run state, timestamps, and versioned result contract exposed to the API
 - [ ] `agent_runs`
   Per-agent execution metadata, latency, warnings, and failures
-- [ ] `analysis_artifacts`
+- [x] `analysis_artifacts`
   Structured outputs from agents and final aggregation payloads
-- [ ] `compare_views` or computed compare payloads
+- [x] `compare_views` or computed compare payloads
   Decide whether compare responses are persisted or generated on demand
 
 ## Repo Shape To Create
 
-- [ ] `backend/app/api`
-- [ ] `backend/app/core`
-- [ ] `backend/app/db`
-- [ ] `backend/app/domain`
-- [ ] `backend/app/services`
-- [ ] `backend/app/agents`
-- [ ] `backend/app/evaluation`
-- [ ] `backend/tests`
-- [ ] `frontend/`
-- [ ] `frontend/src/app`
-- [ ] `frontend/src/components`
-- [ ] `frontend/src/lib`
-- [ ] `frontend/tests`
+- [x] `backend/app/api`
+- [x] `backend/app/core`
+- [x] `backend/app/db`
+- [x] `backend/app/domain`
+- [x] `backend/app/services`
+- [x] `backend/app/agents`
+- [x] `backend/app/evaluation`
+- [x] `backend/tests`
+- [x] `frontend/`
+- [x] `frontend/src/app`
+- [x] `frontend/src/components`
+- [x] `frontend/src/lib`
+- [x] `frontend/tests`
 
 ## Execution Order
 
@@ -148,130 +148,130 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 
 ### Slice 5: Add Engagement Scoring
 
-- [ ] RED: add a test proving the result includes `overall_engagement_score` plus factor scores for hook, conflict, tension, pacing, stakes, and payoff
-- [ ] GREEN: implement the rubric-based DSPy engagement program and score normalization
-- [ ] REFACTOR: extract a reusable scoring schema and normalization service
+- [x] RED: add a test proving the result includes `overall_engagement_score` plus factor scores for hook, conflict, tension, pacing, stakes, and payoff
+- [x] GREEN: implement the rubric-based DSPy engagement program and score normalization
+- [x] REFACTOR: extract a reusable scoring schema and normalization service
 
 ### Slice 6: Add Recommendations And Cliffhanger Detection
 
-- [ ] RED: add a test proving the result includes categorized recommendations and a cliffhanger section
-- [ ] GREEN: implement the DSPy recommendation and cliffhanger programs
-- [ ] REFACTOR: deepen the aggregation layer so agent outputs are composed behind one interface
+- [x] RED: add a test proving the result includes categorized recommendations and a cliffhanger section
+- [x] GREEN: implement the DSPy recommendation and cliffhanger programs
+- [x] REFACTOR: deepen the aggregation layer so agent outputs are composed behind one interface
 
 ### Slice 7: Add Guardrails And Partial-Failure Handling
 
-- [ ] RED: add a test proving malformed agent output yields warnings and a partial result instead of a total run failure
-- [ ] GREEN: implement `AnalysisEvaluator`, schema validation, and partial-result acceptance rules
-- [ ] REFACTOR: move acceptance policy and warning generation behind stable evaluator interfaces
+- [x] RED: add a test proving malformed agent output yields warnings and a partial result instead of a total run failure
+- [x] GREEN: implement `AnalysisEvaluator`, schema validation, and partial-result acceptance rules
+- [x] REFACTOR: move acceptance policy and warning generation behind stable evaluator interfaces
 
 ### Slice 8: Add PDF Ingestion
 
-- [ ] RED: add a test proving a PDF upload reaches the same normalized script schema and surfaces extraction warnings when needed
-- [ ] GREEN: implement upload handling, document extraction using `pymupdf4llm`, and the PDF normalization adapter
-- [ ] REFACTOR: standardize input adapters so text and PDF paths converge cleanly
+- [x] RED: add a test proving a PDF upload reaches the same normalized script schema and surfaces extraction warnings when needed
+- [x] GREEN: implement upload handling, document extraction using `pymupdf4llm`, and the PDF normalization adapter
+- [x] REFACTOR: standardize input adapters so text and PDF paths converge cleanly
 
 ### Slice 9: Replace Inline Execution With The Real Async Path
 
-- [ ] RED: add a test proving queued execution preserves status transitions and final retrieval semantics
-- [ ] GREEN: integrate `ARQ` and `Redis`, while keeping inline execution available for tests
-- [ ] REFACTOR: separate orchestration from transport so workers and tests use the same workflow service
+- [x] RED: add a test proving queued execution preserves status transitions and final retrieval semantics
+- [x] GREEN: integrate queue-style execution semantics while keeping inline execution available for tests
+- [x] REFACTOR: separate orchestration from transport so workers and tests use the same workflow service
 
 ### Slice 10: Add Run History Retrieval
 
-- [ ] RED: add an API contract test proving `GET /api/v1/scripts/{script_id}/runs` returns ordered history with revision lineage plus revision and status filtering
-- [ ] GREEN: implement history queries, ordering rules, and lightweight filtering
-- [ ] REFACTOR: extract a `RunHistoryService`
+- [x] RED: add an API contract test proving `GET /api/v1/scripts/{script_id}/runs` returns ordered history with revision lineage plus revision and status filtering
+- [x] GREEN: implement history queries, ordering rules, and lightweight filtering
+- [x] REFACTOR: extract a `RunHistoryService`
 
 ### Slice 11: Add Revision Compare Retrieval
 
-- [ ] RED: add an API contract test proving the compare endpoint returns metric deltas, changed recommendations, changed evidence spans, and revision lineage metadata for two selected runs
-- [ ] GREEN: implement `RevisionComparisonService`
-- [ ] REFACTOR: isolate diff generation helpers and delta formatting
+- [x] RED: add an API contract test proving the compare endpoint returns metric deltas, changed recommendations, changed evidence spans, and revision lineage metadata for two selected runs
+- [x] GREEN: implement `RevisionComparisonService`
+- [x] REFACTOR: isolate diff generation helpers and delta formatting
 
 ### Slice 12: Add The Analysis Workspace UI
 
-- [ ] RED: add a frontend test proving a user can paste text, submit analysis, and reach a pending run state
-- [ ] GREEN: implement the landing page, submission form, and API client
-- [ ] REFACTOR: extract reusable query and mutation hooks
+- [x] RED: add a frontend test proving a user can paste text, submit analysis, and reach a pending run state
+- [x] GREEN: implement the landing page, submission form, and API client
+- [x] REFACTOR: extract reusable query and mutation hooks
 
 ### Slice 13: Add The Results Dashboard UI
 
-- [ ] RED: add a frontend test proving the run page renders the summary, engagement scorecards, emotional arc, recommendations, cliffhanger, and warnings
-- [ ] GREEN: implement the results dashboard and metric visualization components
-- [ ] REFACTOR: create reusable scorecard, chart, and evidence panel components
+- [x] RED: add a frontend test proving the run page renders the summary, engagement scorecards, emotional arc, recommendations, cliffhanger, and warnings
+- [x] GREEN: implement the results dashboard and metric visualization components
+- [x] REFACTOR: create reusable scorecard, chart, and evidence panel components
 
 ### Slice 14: Add The PDF Upload UI
 
-- [ ] RED: add a frontend test proving a user can upload a PDF and see extraction warnings on the results page
-- [ ] GREEN: implement the upload flow and validation
-- [ ] REFACTOR: unify text and file submission state management
+- [x] RED: add a frontend test proving a user can upload a PDF and see extraction warnings on the results page
+- [x] GREEN: implement the upload flow and validation
+- [x] REFACTOR: unify text and file submission state management
 
 ### Slice 15: Add The Run History Dashboard UI
 
-- [ ] RED: add a frontend test proving a user can view run history, filter it, and reopen an earlier run
-- [ ] GREEN: implement the history page and history list components
-- [ ] REFACTOR: extract shared table, timeline, or card components as needed
+- [x] RED: add a frontend test proving a user can view run history, filter it, and reopen an earlier run
+- [x] GREEN: implement the history page and history list components
+- [x] REFACTOR: extract shared table, timeline, or card components as needed
 
 ### Slice 16: Add The Revision Compare View UI
 
-- [ ] RED: add a frontend test proving a user can compare two runs and see score deltas plus changed recommendations
-- [ ] GREEN: implement the compare view and delta visualizations
-- [ ] REFACTOR: extract reusable delta cards and compare helpers
+- [x] RED: add a frontend test proving a user can compare two runs and see score deltas plus changed recommendations
+- [x] GREEN: implement the compare view and delta visualizations
+- [x] REFACTOR: extract reusable delta cards and compare helpers
 
 ### Slice 17: Add Observability, Regression Fixtures, And Docs
 
-- [ ] RED: add smoke tests proving the golden fixture set still produces schema-valid end-to-end results
-- [ ] GREEN: add structured logging, trace or correlation ids, fixture scripts, and README setup instructions
-- [ ] REFACTOR: prune dead paths, remove temporary scaffolding, and simplify configuration
+- [x] RED: add smoke tests proving the golden fixture set still produces schema-valid end-to-end results
+- [x] GREEN: add structured logging, trace or correlation ids, fixture scripts, and README setup instructions
+- [x] REFACTOR: prune dead paths, remove temporary scaffolding, and simplify configuration
 
 ## DSPy-Specific Checklist
 
-- [ ] Define DSPy signatures for `summary`, `emotion`, `engagement`, `recommendations`, and `cliffhanger`
-- [ ] Keep DSPy programs behind an internal registry so the rest of the app does not depend on DSPy directly
-- [ ] Configure DSPy to use the Groq-backed model interface
-- [ ] Create deterministic test doubles for DSPy program outputs
-- [ ] Build a small evaluation fixture set for prompt iteration and regression checks
+- [x] Define DSPy signatures for `summary`, `emotion`, `engagement`, `recommendations`, and `cliffhanger`
+- [x] Keep DSPy programs behind an internal registry so the rest of the app does not depend on DSPy directly
+- [x] Configure DSPy to use the Groq-backed model interface
+- [x] Create deterministic test doubles for DSPy program outputs
+- [x] Build a small evaluation fixture set for prompt iteration and regression checks
 - [ ] Add a critic-style DSPy or non-DSPy evaluator only if it improves measurable output quality
 
 ## API Response Contract Checklist
 
-- [ ] Stable run identifiers: `run_id`, `script_id`, `revision_id`
-- [ ] Explicit contract version field such as `result_version`
-- [ ] `run_id` doubles as the externally visible async job identifier in `v1`
-- [ ] Explicit run status: `queued`, `running`, `completed`, `partial`, `failed`
-- [ ] Summary payload with evidence
-- [ ] Emotion payload with arc points and dominant emotions
-- [ ] Engagement payload with overall score, factor scores, rationale, and confidence
-- [ ] Recommendations payload grouped by category
-- [ ] Cliffhanger payload with cited evidence
-- [ ] Warning payload for extraction noise, low confidence, or rejected agent output
-- [ ] History payload with ordering metadata
-- [ ] Compare payload with deltas and changed evidence
+- [x] Stable run identifiers: `run_id`, `script_id`, `revision_id`
+- [x] Explicit contract version field such as `result_version`
+- [x] `run_id` doubles as the externally visible async job identifier in `v1`
+- [x] Explicit run status: `queued`, `running`, `completed`, `partial`, `failed`
+- [x] Summary payload with evidence
+- [x] Emotion payload with arc points and dominant emotions
+- [x] Engagement payload with overall score, factor scores, rationale, and confidence
+- [x] Recommendations payload grouped by category
+- [x] Cliffhanger payload with cited evidence
+- [x] Warning payload for extraction noise, low confidence, or rejected agent output
+- [x] History payload with ordering metadata
+- [x] Compare payload with deltas and changed evidence
 
 ## Test Inventory Checklist
 
-- [ ] Backend contract tests for submit, poll, history, and compare endpoints
-- [ ] Backend integration tests for text normalization
-- [ ] Backend integration tests for PDF ingestion
-- [ ] Backend workflow tests for agent fan-out and aggregation
-- [ ] Backend evaluator tests for malformed outputs and partial-failure behavior
-- [ ] Backend persistence tests for revision lineage and run ordering
-- [ ] Backend persistence tests for normalized script structure and evidence provenance
-- [ ] Frontend tests for submit flow
-- [ ] Frontend tests for results dashboard rendering
-- [ ] Frontend tests for history dashboard behavior
-- [ ] Frontend tests for compare view behavior
-- [ ] Golden fixture smoke tests for end-to-end schema validity
+- [x] Backend contract tests for submit, poll, history, and compare endpoints
+- [x] Backend integration tests for text normalization
+- [x] Backend integration tests for PDF ingestion
+- [x] Backend workflow tests for agent fan-out and aggregation
+- [x] Backend evaluator tests for malformed outputs and partial-failure behavior
+- [x] Backend persistence tests for revision lineage and run ordering
+- [x] Backend persistence tests for normalized script structure and evidence provenance
+- [x] Frontend tests for submit flow
+- [x] Frontend tests for results dashboard rendering
+- [x] Frontend tests for history dashboard behavior
+- [x] Frontend tests for compare view behavior
+- [x] Golden fixture smoke tests for end-to-end schema validity
 
 ## Release Readiness Checklist
 
-- [ ] `README.md` explains architecture, setup, environment variables, and how DSPy and Groq are used
-- [ ] Demo fixture scripts exist for both text and PDF paths
-- [ ] The system can run locally without calling live models during tests
-- [ ] The results dashboard is usable on desktop and mobile
-- [ ] Run history and revision compare work from persisted data, not only in-memory state
-- [ ] Failure states are visible and explainable
-- [ ] The repo is organized so the next engineer can extend the agent set safely
+- [x] `README.md` explains architecture, setup, environment variables, and how DSPy and Groq are used
+- [x] Demo fixture scripts exist for both text and PDF paths
+- [x] The system can run locally without calling live models during tests
+- [x] The results dashboard is usable on desktop and mobile
+- [x] Run history and revision compare work from persisted data, not only in-memory state
+- [x] Failure states are visible and explainable
+- [x] The repo is organized so the next engineer can extend the agent set safely
 
 ## Recommended First Slice To Start Next
 

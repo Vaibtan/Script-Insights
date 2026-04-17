@@ -18,3 +18,9 @@ class AnalysisRunRepository(Protocol):
         failure_message: str | None = None,
     ) -> AnalysisRunRecord | None:
         ...
+
+    def list_by_script(self, script_id: UUID) -> tuple[AnalysisRunRecord, ...]:
+        ...
+
+    def list_queued(self, limit: int | None = None) -> tuple[AnalysisRunRecord, ...]:
+        ...

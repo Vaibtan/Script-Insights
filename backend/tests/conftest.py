@@ -14,7 +14,9 @@ from app.main import create_app
 
 
 @pytest.fixture()
-def app() -> FastAPI:
+def app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FastAPI:
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'test.db'}")
+    monkeypatch.setenv("EXECUTION_MODE", "inline")
     return create_app()
 
 
