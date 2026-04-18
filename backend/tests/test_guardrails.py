@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from dataclasses import replace
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -9,6 +11,7 @@ from app.agents.protocols import RecommendationProgram
 from app.agents.protocols import SummaryProgram
 from app.agents.registry import ProgramRegistry
 from app.core.container import build_container
+from app.core.settings import get_settings
 from app.domain.analysis_outputs import CliffhangerResult
 from app.domain.analysis_outputs import EngagementResult
 from app.domain.analysis_outputs import EmotionResult
@@ -59,7 +62,9 @@ class GuardrailTestProgramRegistry(ProgramRegistry):
         return self.cliffhanger_program
 
 
-def test_malformed_agent_output_yields_partial_result_with_warnings() -> None:
+def test_malformed_agent_output_yields_partial_result_with_warnings(
+    tmp_path: Path,
+) -> None:
     from app.agents.heuristic_programs import HeuristicCliffhangerProgram
     from app.agents.heuristic_programs import HeuristicEmotionProgram
     from app.agents.heuristic_programs import HeuristicRecommendationProgram
@@ -71,7 +76,13 @@ def test_malformed_agent_output_yields_partial_result_with_warnings() -> None:
         recommendation_program=HeuristicRecommendationProgram(),
         cliffhanger_program=HeuristicCliffhangerProgram(),
     )
-    app = create_app(container=build_container(program_registry=registry))
+    settings = replace(
+        get_settings(),
+        database_url=f"sqlite:///{tmp_path / 'guardrails.db'}",
+    )
+    app = create_app(
+        container=build_container(settings=settings, program_registry=registry)
+    )
     client = TestClient(app)
 
     payload = {

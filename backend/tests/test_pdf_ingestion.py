@@ -1,7 +1,10 @@
 import fitz
+from dataclasses import replace
+from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.core.container import build_container
+from app.core.settings import get_settings
 from app.main import create_app
 from app.services.pdf_extraction import ExtractedPdfText
 
@@ -39,7 +42,9 @@ def test_pdf_upload_is_normalized_and_surfaces_warnings(client: TestClient) -> N
     assert len(normalized["warnings"]) >= 1
 
 
-def test_pdf_upload_can_continue_existing_script_lineage_and_keep_extraction_warnings() -> None:
+def test_pdf_upload_can_continue_existing_script_lineage_and_keep_extraction_warnings(
+    tmp_path: Path,
+) -> None:
     class StubPdfExtractor:
         def extract_text(self, pdf_bytes: bytes) -> ExtractedPdfText:
             _ = pdf_bytes
@@ -48,7 +53,11 @@ def test_pdf_upload_can_continue_existing_script_lineage_and_keep_extraction_war
                 warnings=("pdf_layout_noise",),
             )
 
-    container = build_container()
+    settings = replace(
+        get_settings(),
+        database_url=f"sqlite:///{tmp_path / 'pdf-ingestion.db'}",
+    )
+    container = build_container(settings=settings)
     container.pdf_text_extractor = StubPdfExtractor()  # type: ignore[assignment]
     client = TestClient(create_app(container=container))
 

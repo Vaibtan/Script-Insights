@@ -10,6 +10,7 @@ from app.repositories.analysis_artifacts import AnalysisArtifactRepository
 from app.repositories.analysis_runs import AnalysisRunRepository
 from app.repositories.sqlalchemy import SqlAlchemyAnalysisArtifactRepository
 from app.repositories.sqlalchemy import SqlAlchemyAnalysisRunRepository
+from app.repositories.sqlalchemy_gateway import SqlAlchemyPersistenceGateway
 from app.evaluation.evaluator import AnalysisEvaluator
 from app.services.dispatchers import InlineAnalysisDispatcher
 from app.services.dispatchers import QueuedAnalysisDispatcher
@@ -51,25 +52,30 @@ def build_container(
 ) -> AppContainer:
     resolved_settings = settings or get_settings()
     configure_dspy_for_settings(resolved_settings)
-    if run_repository is None or artifact_repository is None:
-        session_factory = create_session_factory(resolved_settings.database_url)
-    else:
-        session_factory = None
+    sqlalchemy_gateway = (
+        SqlAlchemyPersistenceGateway(
+            create_session_factory(resolved_settings.database_url)
+        )
+        if run_repository is None or artifact_repository is None
+        else None
+    )
 
     if run_repository is None:
-        if session_factory is None:
-            raise ValueError("session_factory is required for default run repository")
-        resolved_run_repository = SqlAlchemyAnalysisRunRepository(session_factory)
+        if sqlalchemy_gateway is None:
+            raise ValueError("sqlalchemy_gateway is required for default run repository")
+        resolved_run_repository = SqlAlchemyAnalysisRunRepository(
+            gateway=sqlalchemy_gateway
+        )
     else:
         resolved_run_repository = run_repository
 
     if artifact_repository is None:
-        if session_factory is None:
+        if sqlalchemy_gateway is None:
             raise ValueError(
-                "session_factory is required for default artifact repository"
+                "sqlalchemy_gateway is required for default artifact repository"
             )
         resolved_artifact_repository = SqlAlchemyAnalysisArtifactRepository(
-            session_factory
+            gateway=sqlalchemy_gateway
         )
     else:
         resolved_artifact_repository = artifact_repository
