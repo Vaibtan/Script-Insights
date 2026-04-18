@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from dataclasses import replace
 from pathlib import Path
 from uuid import uuid4
 
@@ -29,9 +28,8 @@ def test_get_unknown_run_returns_404(client: TestClient) -> None:
 def test_failed_workflow_marks_run_failed_and_surfaces_failure_message(
     tmp_path: Path,
 ) -> None:
-    settings = replace(
-        get_settings(),
-        database_url=f"sqlite:///{tmp_path / 'run-errors.db'}",
+    settings = get_settings().model_copy(
+        update={"database_url": f"sqlite:///{tmp_path / 'run-errors.db'}"}
     )
     app = create_app(
         container=build_container(settings=settings, workflow=FailingWorkflow())

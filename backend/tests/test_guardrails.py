@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from dataclasses import replace
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -76,9 +75,8 @@ def test_malformed_agent_output_yields_partial_result_with_warnings(
         recommendation_program=HeuristicRecommendationProgram(),
         cliffhanger_program=HeuristicCliffhangerProgram(),
     )
-    settings = replace(
-        get_settings(),
-        database_url=f"sqlite:///{tmp_path / 'guardrails.db'}",
+    settings = get_settings().model_copy(
+        update={"database_url": f"sqlite:///{tmp_path / 'guardrails.db'}"}
     )
     app = create_app(
         container=build_container(settings=settings, program_registry=registry)

@@ -1,10 +1,20 @@
-from dataclasses import dataclass
-import os
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+from typing import Annotated
 from typing import Literal
 
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
+from pydantic_settings import NoDecode
+from pydantic_settings import SettingsConfigDict
 
-@dataclass(frozen=True)
-class Settings:
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_ENV_FILE = BACKEND_ROOT / ".env"
+
+
+class Settings(BaseSettings):
     app_name: str = "Script Insights API"
     api_v1_prefix: str = "/api/v1"
     result_version: str = "v1"
@@ -12,25 +22,36 @@ class Settings:
     database_url: str = "sqlite:///./script_insights.db"
     groq_api_key: str | None = None
     groq_model: str = "groq/llama-3.3-70b-versatile"
-    cors_origins: tuple[str, ...] = ("http://localhost:3000",)
+    cors_origins: Annotated[tuple[str, ...], NoDecode] = ("http://localhost:3000",)
+
+    model_config = SettingsConfigDict(
+        env_file=DEFAULT_ENV_FILE,
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(
+        cls,
+        value: object,
+    ) -> tuple[str, ...] | object:
+        if value is None:
+            return ("http://localhost:3000",)
+        if isinstance(value, str):
+            parsed = tuple(origin.strip() for origin in value.split(",") if origin.strip())
+            return parsed or ("http://localhost:3000",)
+        if isinstance(value, (list, tuple)):
+            parsed = tuple(str(origin).strip() for origin in value if str(origin).strip())
+            return parsed or ("http://localhost:3000",)
+        return value
 
 
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    raw_execution_mode = os.getenv("EXECUTION_MODE", "inline").strip().lower()
-    execution_mode: Literal["inline", "queued"] = (
-        "queued" if raw_execution_mode == "queued" else "inline"
-    )
-    return Settings(
-        app_name=os.getenv("APP_NAME", "Script Insights API"),
-        api_v1_prefix=os.getenv("API_V1_PREFIX", "/api/v1"),
-        result_version=os.getenv("RESULT_VERSION", "v1"),
-        execution_mode=execution_mode,
-        database_url=os.getenv("DATABASE_URL", "sqlite:///./script_insights.db"),
-        groq_api_key=os.getenv("GROQ_API_KEY"),
-        groq_model=os.getenv("GROQ_MODEL", "groq/llama-3.3-70b-versatile"),
-        cors_origins=tuple(
-            origin.strip()
-            for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
-            if origin.strip()
-        ),
-    )
+    return Settings()
+
+
+def reset_settings_cache() -> None:
+    get_settings.cache_clear()

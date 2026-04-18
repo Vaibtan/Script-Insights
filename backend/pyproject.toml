@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "dspy>=2.6.0",
     "fastapi>=0.116.1",
+    "pydantic-settings>=2.10.1",
     "python-multipart>=0.0.20",
     "pymupdf4llm>=1.27.2.2",
     "sqlalchemy>=2.0.41",

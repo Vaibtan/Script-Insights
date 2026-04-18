@@ -1,4 +1,3 @@
-from dataclasses import replace
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -9,10 +8,11 @@ from app.main import create_app
 
 
 def _build_client(database_path: Path, *, execution_mode: str = "inline") -> TestClient:
-    settings = replace(
-        get_settings(),
-        execution_mode=execution_mode,
-        database_url=f"sqlite:///{database_path}",
+    settings = get_settings().model_copy(
+        update={
+            "execution_mode": execution_mode,
+            "database_url": f"sqlite:///{database_path}",
+        }
     )
     return TestClient(create_app(container=build_container(settings=settings)))
 

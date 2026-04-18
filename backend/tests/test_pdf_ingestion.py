@@ -1,5 +1,4 @@
 import fitz
-from dataclasses import replace
 from pathlib import Path
 from fastapi.testclient import TestClient
 
@@ -53,9 +52,8 @@ def test_pdf_upload_can_continue_existing_script_lineage_and_keep_extraction_war
                 warnings=("pdf_layout_noise",),
             )
 
-    settings = replace(
-        get_settings(),
-        database_url=f"sqlite:///{tmp_path / 'pdf-ingestion.db'}",
+    settings = get_settings().model_copy(
+        update={"database_url": f"sqlite:///{tmp_path / 'pdf-ingestion.db'}"}
     )
     container = build_container(settings=settings)
     container.pdf_text_extractor = StubPdfExtractor()  # type: ignore[assignment]

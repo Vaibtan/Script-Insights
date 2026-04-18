@@ -32,6 +32,33 @@ Architecture diagram:
 - Node `20+` (`24` also works)
 - npm
 
+## Configuration
+
+Backend configuration is now `.env`-driven by default.
+
+1. Copy the example file:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+On PowerShell:
+
+```powershell
+cd backend
+Copy-Item .env.example .env
+```
+
+2. Edit `backend/.env` and set the values you need:
+- `EXECUTION_MODE`
+- `DATABASE_URL`
+- `CORS_ORIGINS`
+- `GROQ_API_KEY`
+- `GROQ_MODEL`
+
+Shell environment variables still override `.env` values when explicitly set.
+
 ## Run Locally
 
 ### 1. Start the backend
@@ -141,6 +168,12 @@ Backend environment variables:
 - `CORS_ORIGINS` (optional; comma-separated, default `http://localhost:3000`)
 - `GROQ_API_KEY` (optional; enables DSPy LM config through Groq)
 - `GROQ_MODEL` (optional; default `groq/llama-3.3-70b-versatile`)
+
+Default backend config file:
+- `backend/.env`
+
+Example config file:
+- [backend/.env.example](backend/.env.example)
 
 Key endpoints:
 - `POST /analysis/runs` (paste text)

@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
+import { Commissioner, Fraunces } from "next/font/google";
 import { ReactNode } from "react";
 
 import { Providers } from "@/components/providers";
 import "@/app/globals.css";
 
-const headingFont = Space_Grotesk({
+const headingFont = Fraunces({
   subsets: ["latin"],
   variable: "--font-heading",
 });
 
-const bodyFont = IBM_Plex_Sans({
+const bodyFont = Commissioner({
   subsets: ["latin"],
   variable: "--font-body",
 });

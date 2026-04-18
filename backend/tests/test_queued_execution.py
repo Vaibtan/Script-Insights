@@ -1,4 +1,3 @@
-from dataclasses import replace
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -11,10 +10,11 @@ from app.main import create_app
 def test_queued_mode_preserves_status_transitions_and_final_retrieval(
     tmp_path: Path,
 ) -> None:
-    settings = replace(
-        get_settings(),
-        execution_mode="queued",
-        database_url=f"sqlite:///{tmp_path / 'queued-execution.db'}",
+    settings = get_settings().model_copy(
+        update={
+            "execution_mode": "queued",
+            "database_url": f"sqlite:///{tmp_path / 'queued-execution.db'}",
+        }
     )
     app = create_app(container=build_container(settings=settings))
     client = TestClient(app)
