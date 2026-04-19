@@ -1,0 +1,12 @@
+Title: The Audit Room
+
+Scene: A glass meeting room late at night.
+Priya: Why did you ask me to stay after everyone left?
+Jon: Because the numbers in quarter three do not reconcile.
+Priya: Then call finance.
+Jon: Finance says the override came from your login.
+Priya: That is impossible.
+Jon: Then explain why the server room opened at 2:14 a.m.
+Priya: Because I was there.
+Jon: Doing what?
+Priya: Trying to stop this before it reached the board.

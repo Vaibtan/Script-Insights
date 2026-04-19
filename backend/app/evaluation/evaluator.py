@@ -8,7 +8,7 @@ _ENGAGEMENT_FACTORS = {"hook", "conflict", "tension", "pacing", "stakes", "payof
 _RECOMMENDATION_CATEGORIES = {"pacing", "dialogue", "conflict", "emotional_impact"}
 
 
-@dataclass(slots=True)
+@dataclass(slots = True)
 class AnalysisEvaluator:
     critic: CriticEvaluator | None = None
 

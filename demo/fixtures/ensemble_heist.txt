@@ -1,0 +1,20 @@
+Title: Four Minutes To Exit
+
+Scene: Service tunnel beneath a museum.
+Nina: We are ninety seconds behind.
+Omar: Because Vikram cut the lights too early.
+Vikram: Because the guard changed routes.
+Sara: Stop. We only need the ledger, not the whole room.
+Nina: Door lock?
+Omar: Magnetic. I can spoof it for twelve seconds.
+Sara: Then someone chooses what gets left behind.
+
+Scene: Vault threshold.
+Vikram: There are two ledgers.
+Nina: Take both.
+Omar: We do not have weight for both.
+Sara: Then take the burned one.
+Nina: Why that one?
+Sara: Because someone already tried to erase it.
+Alarm: Security breach on lower level.
+Omar: Decision now.
