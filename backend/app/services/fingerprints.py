@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 import json
 
+from app.agents.llm_gateway import LLMGateway
 from app.core.settings import Settings
 from app.domain.normalization import NormalizationWarning
 from app.domain.normalization import NormalizedScript
@@ -30,6 +31,7 @@ def _serialize_warnings(
 
 @dataclass(slots=True)
 class ExecutionFingerprintService:
+    llm_gateway: LLMGateway
     settings: Settings
 
     def compute(
@@ -38,11 +40,12 @@ class ExecutionFingerprintService:
         script_text: str,
         source_warnings: tuple[NormalizationWarning, ...],
     ) -> str:
+        gateway_identity = self.llm_gateway.identity()
         payload = {
             "fingerprint_version": self.settings.analysis_fingerprint_version,
             "result_version": self.settings.result_version,
-            "llm_backend": "groq" if self.settings.groq_api_key else "heuristic",
-            "groq_model": self.settings.groq_model,
+            "llm_backend": gateway_identity.backend,
+            "llm_model": gateway_identity.model,
             "script_text": _canonicalize_script_text(script_text),
             "source_warnings": _serialize_warnings(source_warnings),
         }

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
 
+from app.repositories.agent_runs import AgentRunRepository
 from app.domain.analysis_runs import AnalysisRunRecord
 from app.repositories.analysis_artifacts import AnalysisArtifactRepository
 from app.repositories.analysis_runs import AnalysisRunRepository
@@ -44,6 +45,7 @@ class RunQueueProcessor:
     workflow: AnalysisWorkflowExecutor
     run_repository: AnalysisRunRepository
     artifact_repository: AnalysisArtifactRepository
+    agent_run_repository: AgentRunRepository
     fingerprint_service: ExecutionFingerprintService
 
     def drain(self) -> int:
@@ -60,6 +62,7 @@ class RunQueueProcessor:
                 workflow=self.workflow,
                 run_repository=self.run_repository,
                 artifact_repository=self.artifact_repository,
+                agent_run_repository=self.agent_run_repository,
                 fingerprint_service=self.fingerprint_service,
             )
             processed += 1

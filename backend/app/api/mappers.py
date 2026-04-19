@@ -1,4 +1,7 @@
 from app.api.schemas import AnalysisRunDetailResponse
+from app.api.schemas import AgentRunResponse
+from app.api.schemas import CriticAssessmentResponse
+from app.api.schemas import CriticIssueResponse
 from app.api.schemas import DialogueBlockResponse
 from app.api.schemas import EngagementResponse
 from app.api.schemas import EngagementDeltaResponse
@@ -156,6 +159,36 @@ def to_analysis_run_detail_response(
             for item in detail.recommendations
         ],
         cliffhanger=cliffhanger_response,
+        critic_assessment=(
+            CriticAssessmentResponse(
+                score=detail.critic_assessment.score,
+                summary=detail.critic_assessment.summary,
+                issues=[
+                    CriticIssueResponse(
+                        code=issue.code,
+                        message=issue.message,
+                        component=issue.component,
+                    )
+                    for issue in detail.critic_assessment.issues
+                ],
+            )
+            if detail.critic_assessment is not None
+            else None
+        ),
+        agent_runs=[
+            AgentRunResponse(
+                agent_name=item.agent_name,
+                status=item.status,
+                backend=item.backend,
+                model_name=item.model_name,
+                started_at=item.started_at.isoformat(),
+                completed_at=item.completed_at.isoformat(),
+                latency_ms=item.latency_ms,
+                warnings=list(item.warnings),
+                failure_message=item.failure_message,
+            )
+            for item in detail.agent_runs
+        ],
         warnings=[
             AnalysisWarningResponse(
                 code=item.code,

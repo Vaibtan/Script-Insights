@@ -75,7 +75,7 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
   Input adapters for raw text and extracted PDF text, outputting one canonical script schema
 - [x] `AnalysisWorkflow`
   Orchestrates multi-agent execution, retries, partial failures, and aggregation behind one interface
-- [ ] `LLMGateway`
+- [x] `LLMGateway`
   Provider abstraction for Groq-backed calls and future fallback models
 - [x] `DSPyProgramRegistry`
   Owns DSPy signatures and programs for summary, emotion, engagement, suggestions, and cliffhanger analysis
@@ -98,7 +98,7 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
   Uploaded files and extraction provenance
 - [x] `analysis_runs`
   Durable async job or run state, timestamps, and versioned result contract exposed to the API
-- [ ] `agent_runs`
+- [x] `agent_runs`
   Per-agent execution metadata, latency, warnings, and failures
 - [x] `analysis_artifacts`
   Structured outputs from agents and final aggregation payloads
@@ -240,7 +240,12 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 - [x] Add normalized-content fingerprint detection for structurally similar prior runs without auto-reusing evidence offsets
 - [x] Add single-flight dedupe for exact queued or running matches while preserving separate run lineage records
 - [x] Surface reuse provenance in the submit workspace and run dashboard via `reused_from_run_id` and `normalized_candidate_run_id`
+- [x] Persist `agent_runs` and expose them in run detail responses and the dashboard
+- [x] Add a critic-style evaluator and surface `critic_assessment` in the API and UI
+- [x] Harden partial-result workflow semantics so non-critical agent failures degrade to `partial` instead of failing the full run
+- [x] Harden `LLMGateway` lifecycle handling for deterministic test resets and model reconfiguration
 - [x] Redesign the frontend with a stronger dashboard visual system, motion polish, empty states, and richer compare deltas
+- [x] Align the root `README.md` with `TASK.md`, including approach, model interaction design, limitations, and future improvements
 
 ## DSPy-Specific Checklist
 
@@ -249,7 +254,7 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 - [x] Configure DSPy to use the Groq-backed model interface
 - [x] Create deterministic test doubles for DSPy program outputs
 - [x] Build a small evaluation fixture set for prompt iteration and regression checks
-- [ ] Add a critic-style DSPy or non-DSPy evaluator only if it improves measurable output quality
+- [x] Add a critic-style DSPy or non-DSPy evaluator only if it improves measurable output quality
 
 ## API Response Contract Checklist
 
@@ -286,7 +291,7 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 
 ## Release Readiness Checklist
 
-- [x] `README.md` explains architecture, setup, environment variables, and how DSPy and Groq are used
+- [x] `README.md` explains architecture, setup, environment variables, how DSPy and Groq are used, and the assignment-specific sections requested in `TASK.md`
 - [x] Demo fixture scripts exist for both text and PDF paths
 - [x] The system can run locally without calling live models during tests
 - [x] The results dashboard is usable on desktop and mobile

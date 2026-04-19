@@ -1,272 +1,285 @@
 # Script Insights
 
-Multi-agent script intelligence platform for short-form story analysis.  
-The system accepts pasted text or PDF uploads, normalizes input into a canonical script structure, runs specialized analysis agents, and exposes run dashboards, history, and revision comparison.
+Script Insights is a multi-agent content intelligence platform for short-form script analysis. It accepts pasted text or PDF uploads, normalizes the script into a canonical structure, runs specialized analysis agents, and returns a structured dashboard with revision history and compare flows.
 
-## What This Builds
+This implementation intentionally goes beyond the minimum assignment shape while staying aligned to the core task: analyze a short script, explain the story and emotional arc, estimate engagement potential, and suggest concrete storytelling improvements.
 
-- Next.js frontend for text/PDF submission, run dashboards, run history, and revision compare.
-- FastAPI backend for ingestion, orchestration, retrieval, and worker control.
-- Agentic analysis workflow for `summary`, `emotion`, `engagement`, `recommendations`, and `cliffhanger`.
-- Durable SQLite persistence through SQLAlchemy repositories and codecs.
-- Optional DSPy plus Groq live inference, with deterministic heuristic fallback always available.
+## Assignment Alignment
+
+This repository satisfies the assignment goals in `TASK.md`:
+
+- accepts short script input as pasted text
+- also supports PDF upload as an extended input path
+- returns a 3-4 line story summary
+- analyzes emotional tone, dominant emotions, and emotional arc
+- scores engagement potential with factor-level reasoning
+- suggests improvements in pacing, conflict, dialogue, and emotional impact
+- identifies a cliffhanger / suspenseful moment as an optional enhancement
+- provides a lightweight but polished web interface for submitting and reviewing results
+
+## Overall Approach
+
+The system is built as a small but real agentic platform rather than a single prompt wrapper.
+
+1. Ingest script input from text or PDF.
+2. Normalize the content into scenes, dialogue blocks, and evidence spans.
+3. Run specialized agents for `summary`, `emotion`, `engagement`, `recommendations`, and `cliffhanger`.
+4. Apply evaluation and guardrails so malformed agent output becomes warnings or partial results instead of silently corrupting the response.
+5. Persist runs, artifacts, revision lineage, and per-agent execution metadata.
+6. Expose the result through a dashboard, run history view, and revision compare view.
+
+## Model And Prompt / Interaction Design
+
+The model layer is intentionally structured instead of relying on one large free-form prompt.
+
+- Each analysis capability is represented by its own DSPy signature and program.
+- DSPy is used as the structured LLM interaction layer when a Groq API key is configured.
+- A deterministic heuristic implementation exists for every agent and acts as the always-available fallback path.
+- The workflow is therefore stable in local development and fully deterministic in tests.
+- An `AnalysisEvaluator` validates output structure, evidence grounding, and score bounds.
+- A lightweight critic-style evaluator adds a final quality assessment over the aggregated result.
+- Exact execution fingerprinting prevents redundant recomputation for duplicate submissions, while normalized-content fingerprints identify structurally similar prior runs without unsafe automatic reuse.
+
+In practice, this means the system keeps the benefits of LLM-native analysis while still behaving like an engineered backend rather than a fragile prompt demo.
+
+## Tools And Technologies Used
+
+- Backend: `FastAPI`, `Pydantic v2`, `SQLAlchemy`, `SQLite`
+- Frontend: `Next.js` App Router, `React`, `TypeScript`, `TanStack Query`
+- LLM orchestration: `DSPy`
+- External model provider: `Groq`
+- PDF extraction: `pymupdf4llm`
+- Testing: `pytest`, `vitest`
 
 ## Architecture
 
-- `backend/` (`FastAPI`, Python): API contracts, orchestration, normalization, evaluator/guardrails, queue semantics, history + compare services.
-- `frontend/` (`Next.js`, TypeScript): analysis workspace, run dashboard, history dashboard, and compare view.
-- Agent outputs are structured and versioned (`result_version: "v1"`).
-- Workflow stages:
-1. Ingest (`text` or `pdf`) and normalize.
-2. Run specialist programs (`summary`, `emotion`, `engagement`, `recommendations`, `cliffhanger`).
-3. Evaluate outputs and apply partial-result guardrails.
-4. Persist run/artifact state and expose API views.
+- `backend/`
+  - FastAPI API contracts and orchestration
+  - script normalization and PDF extraction
+  - multi-agent workflow execution
+  - LLM gateway and DSPy program registry
+  - evaluator, critic, and guardrail logic
+  - durable persistence, queue semantics, history, and compare services
+- `frontend/`
+  - submission workspace for text and PDF flows
+  - run dashboard with metrics, evidence, critic assessment, and agent run trace
+  - run history dashboard
+  - revision compare dashboard
+
+Core backend flow:
+
+1. `POST /api/v1/analysis/runs` or `POST /api/v1/analysis/runs/upload`
+2. normalize script input
+3. execute specialist agents
+4. evaluate aggregated output
+5. persist artifact + agent runs
+6. return run detail, history, and compare data
 
 Architecture diagram:
 - [docs/architecture/script-insights-agentic-system.html](docs/architecture/script-insights-agentic-system.html)
+
+## Features Implemented
+
+- text submission
+- PDF upload submission
+- canonical normalization with extraction warnings
+- multi-agent analysis for summary, emotion, engagement, recommendations, and cliffhanger
+- inline and queued execution modes
+- durable SQLite persistence
+- run history dashboard
+- revision compare view
+- revision continuation through `script_id`
+- exact duplicate deduplication via execution fingerprints
+- normalized-content reuse candidate detection
+- critic assessment and per-agent execution trace
+- polished frontend dashboard with visual score cards, deltas, and evidence panels
 
 ## Local Prerequisites
 
 - Python `3.11+`
 - `uv`
-- Node `20+` (`24` also works)
+- Node `20+`
 - npm
 
 ## Configuration
 
-Backend configuration is now `.env`-driven by default.
+The backend is `.env`-driven.
 
 1. Copy the example file:
-
-```bash
-cd backend
-cp .env.example .env
-```
-
-On PowerShell:
 
 ```powershell
 cd backend
 Copy-Item .env.example .env
 ```
 
-2. Edit `backend/.env` and set the values you need:
-- `EXECUTION_MODE`
+For bash or zsh:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+2. Edit `backend/.env` as needed.
+
+Important variables:
+
+- `EXECUTION_MODE` = `inline` or `queued`
 - `DATABASE_URL`
 - `CORS_ORIGINS`
 - `GROQ_API_KEY`
 - `GROQ_MODEL`
+- `ANALYSIS_FINGERPRINT_VERSION`
+- `NORMALIZED_FINGERPRINT_VERSION`
 
 Shell environment variables still override `.env` values when explicitly set.
+
+Frontend configuration is optional:
+
+- `NEXT_PUBLIC_API_BASE_URL` defaults to `http://localhost:8000`
 
 ## Run Locally
 
 ### 1. Start the backend
 
-```bash
+```powershell
 cd backend
 uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-Backend base URL:
-- `http://localhost:8000`
+Backend URLs:
+
+- app: `http://localhost:8000`
 - API root: `http://localhost:8000/api/v1`
 
 ### 2. Start the frontend
 
 Open a second terminal:
 
-```bash
+```powershell
 cd frontend
 npm install
 npm run dev
 ```
 
 Frontend URL:
+
 - `http://localhost:3000`
 
-### 3. Open the app
+### 3. Use the app
 
-- Navigate to `http://localhost:3000`
-- Paste script text or upload a PDF
-- Review results at the run dashboard
-- Use history and compare views from the dashboard links
+- open `http://localhost:3000`
+- paste a script or upload a PDF
+- inspect the run dashboard
+- open history and compare views from the run-level navigation
 
-## Local Execution Modes
+## Execution Modes
 
 ### Inline mode
 
-This is the default local mode. Submission runs are processed immediately inside the API process.
+Default local mode. The API process executes the workflow synchronously.
 
-```bash
+```powershell
 cd backend
 uv run uvicorn app.main:app --reload
 ```
 
 ### Queued mode
 
-Queued mode persists submitted runs and processes them through the worker runtime.
+Queued mode persists submitted runs and requires a worker process to drain them.
 
 Backend terminal:
 
-```bash
+```powershell
 cd backend
-$env:EXECUTION_MODE="queued"
+$env:EXECUTION_MODE = "queued"
 uv run uvicorn app.main:app --reload
 ```
 
 Worker terminal:
 
-```bash
+```powershell
 cd backend
-$env:EXECUTION_MODE="queued"
+$env:EXECUTION_MODE = "queued"
 uv run python -m app.workers.cli --poll-interval 1.0
 ```
 
-One-shot worker drain:
+One-shot drain:
 
-```bash
+```powershell
 cd backend
-$env:EXECUTION_MODE="queued"
+$env:EXECUTION_MODE = "queued"
 uv run python -m app.workers.cli --once
 ```
 
-For bash or zsh, use:
+For bash or zsh:
 
 ```bash
 cd backend
 EXECUTION_MODE=queued uv run python -m app.workers.cli --poll-interval 1.0
 ```
 
-## DSPy and Groq
+## API Surface
 
-- DSPy is integrated via `backend/app/agents/dspy_programs.py` and `backend/app/agents/registry.py`.
-- Current v1 behavior is deterministic-first: heuristic fallbacks are always available and are used when DSPy LM configuration is absent or fails.
-- Groq is the intended external provider for DSPy LM configuration in non-test environments.
-- Tests never call live LLMs; they validate contracts and behavior with deterministic outputs.
+Key routes:
 
-## Backend Setup
-
-Prerequisites:
-- Python `3.11+`
-- `uv` package manager
-
-Commands:
-
-```bash
-cd backend
-uv sync
-uv run uvicorn app.main:app --reload
-```
-
-API base URL: `http://localhost:8000/api/v1`
-
-Backend environment variables:
-- `EXECUTION_MODE` = `inline` or `queued` (default `inline`)
-- `DATABASE_URL` (optional; default `sqlite:///./script_insights.db`)
-- `CORS_ORIGINS` (optional; comma-separated, default `http://localhost:3000`)
-- `GROQ_API_KEY` (optional; enables DSPy LM config through Groq)
-- `GROQ_MODEL` (optional; default `groq/llama-3.3-70b-versatile`)
-
-Default backend config file:
-- `backend/.env`
-
-Example config file:
-- [backend/.env.example](backend/.env.example)
-
-Key endpoints:
-- `POST /analysis/runs` (paste text)
-- `POST /analysis/runs/upload` (PDF upload)
-- `GET /analysis/runs/{run_id}`
-- `GET /scripts/{script_id}/runs`
-- `GET /scripts/{script_id}/compare`
-- `POST /analysis/workers/drain` (process queued runs in queued mode)
-
-Observability:
-- Structured JSON request logs with correlation IDs.
-- Incoming `x-request-id` is propagated; when missing, the backend generates one and returns it in response headers.
-
-Worker process:
-
-```bash
-cd backend
-EXECUTION_MODE=queued uv run python -m app.workers.cli --once
-```
-
-Use `--poll-interval 1.0` without `--once` to run a long-lived local worker loop.
-
-## Frontend Setup
-
-Commands:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend default URL: `http://localhost:3000`
-
-Environment variable:
-- `NEXT_PUBLIC_API_BASE_URL` (optional, default `http://localhost:8000`)
-
-Routes:
-- `/` analysis workspace (paste/upload + submission state)
-- `/runs/[runId]` run results dashboard
-- `/scripts/[scriptId]/history` run history dashboard
-- `/scripts/[scriptId]/compare` revision compare view
-
-The home page accepts `?script_id=<uuid>` so the UI can submit a new revision into an existing script lineage.
+- `GET /api/v1/health`
+- `POST /api/v1/analysis/runs`
+- `POST /api/v1/analysis/runs/upload`
+- `GET /api/v1/analysis/runs/{run_id}`
+- `GET /api/v1/scripts/{script_id}/runs`
+- `GET /api/v1/scripts/{script_id}/compare`
+- `POST /api/v1/analysis/workers/drain`
 
 ## Build And Test Locally
 
-### Backend tests
+Backend tests:
 
-```bash
+```powershell
 cd backend
 uv run pytest -q
 ```
 
-### Frontend tests
+Frontend tests:
 
-```bash
+```powershell
 cd frontend
 npm test
 ```
 
-### Frontend production build
+Frontend production build:
 
-```bash
+```powershell
 cd frontend
 npm run build
 ```
 
-### Full local validation
+Recommended local validation sequence:
 
-Run the commands below before considering a local change complete:
-
-```bash
+```powershell
 cd backend
 uv run pytest -q
 ```
 
-```bash
+```powershell
 cd frontend
 npm test
 npm run build
 ```
-
-Notes:
-- The backend is a Python service, so there is no separate compiled build artifact step beyond dependency install and runtime/test validation.
-- The frontend build validates the Next.js production bundle and TypeScript integration.
 
 ## Testing Scope
 
-Current automated coverage includes:
-- Backend API contracts and workflow slices (submit, normalization, summary, emotion, engagement, recommendations/cliffhanger, guardrails, PDF ingestion, queue semantics, history/compare).
-- Backend golden fixture smoke test for schema-valid end-to-end outputs and SQLite persistence tests across app instances.
-- Frontend flow tests for submit, dashboard rendering, PDF upload path, history filters, and compare deltas.
+Automated coverage currently includes:
+
+- backend API contract tests for submit, run detail, history, compare, and worker drain flows
+- backend normalization and PDF ingestion tests
+- backend workflow tests for aggregation, partial failures, and guardrails
+- backend fingerprint reuse and single-flight dedupe tests
+- backend persistence tests for revision lineage and restart-safe behavior
+- backend tests for `LLMGateway`, critic assessment, and per-agent run tracking
+- frontend tests for submission, dashboard rendering, PDF upload, history filters, compare deltas, and reuse provenance
+
+Tests are deterministic and do not call live Groq models.
 
 ## Demo Fixtures
 
@@ -274,8 +287,26 @@ Current automated coverage includes:
 - PDF fixture: [demo/fixtures/sample_script.pdf](demo/fixtures/sample_script.pdf)
 - PDF generator: [demo/scripts/generate_sample_pdf.py](demo/scripts/generate_sample_pdf.py)
 
-## Known Limitations
+## Current Limitations
 
-- Agent execution metadata is not yet exposed through an API surface.
-- DSPy/Groq live model wiring is intentionally not exercised in automated tests.
-- Authentication/authorization is not included in v1.
+- authentication and multi-user support are not included
+- SQLite plus the local worker loop are suitable for v1 and local development, not a production-scale deployment
+- the critic evaluator is a lightweight rubric-based reviewer, not a full learned evaluation system
+- live Groq-backed DSPy execution is intentionally not exercised in automated tests
+- normalized-content matches are surfaced as candidates only; they are not auto-reused because evidence offsets are text-specific
+
+## Possible Improvements With More Time
+
+- move from SQLite-backed local queueing to Redis or another production worker backend
+- add auth, user workspaces, and organization-level history
+- add richer observability for token usage, cost, latency, and per-agent tracing
+- introduce a stronger learned or LLM-graded critic with offline benchmarking
+- add deployment manifests and hosted demo infrastructure
+- expand compare views with narrative-diff summaries and richer evidence inspection
+
+## Submission Notes
+
+To match the assignment deliverables cleanly, this repository should be paired with:
+
+- a short demo video showing text submission, PDF upload, dashboard review, and revision compare
+- a brief walkthrough of why the system is multi-agent, how DSPy and Groq are used, and where heuristic fallbacks are intentionally retained

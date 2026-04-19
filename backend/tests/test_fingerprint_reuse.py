@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
@@ -8,10 +9,20 @@ from app.agents.heuristic_programs import HeuristicEngagementProgram
 from app.agents.heuristic_programs import HeuristicEmotionProgram
 from app.agents.heuristic_programs import HeuristicRecommendationProgram
 from app.agents.heuristic_programs import HeuristicSummaryProgram
+from app.agents.llm_gateway import LLMGateway
 from app.core.container import build_container
 from app.core.settings import get_settings
+from app.domain.analysis_runs import AnalysisRunRecord
+from app.domain.analysis_runs import RunStatus
+from app.domain.analysis_runs import SourceType
+from app.domain.run_views import SubmitAnalysisRunCommand
+from app.repositories.in_memory import InMemoryAnalysisArtifactRepository
+from app.repositories.in_memory import InMemoryAgentRunRepository
+from app.repositories.in_memory import InMemoryAnalysisRunRepository
 from app.main import create_app
+from app.services.fingerprints import ExecutionFingerprintService
 from app.services.normalization import ScriptNormalizer
+from app.services.run_submission import RunSubmissionService
 from app.services.workflow import AnalysisWorkflow
 
 
@@ -29,6 +40,7 @@ def _build_counting_workflow() -> CountingWorkflow:
     return CountingWorkflow(
         delegate=AnalysisWorkflow(
             normalizer=ScriptNormalizer(),
+            llm_gateway=_Gateway(),
             summary_program=HeuristicSummaryProgram(),
             emotion_program=HeuristicEmotionProgram(),
             engagement_program=HeuristicEngagementProgram(),
@@ -134,6 +146,45 @@ def test_persisted_duplicate_submission_skips_queue_after_prior_completion(
     assert second_detail.json()["reused_from_run_id"] == first_handle["run_id"]
 
 
+def test_completed_reuse_always_points_to_the_original_execution_source(
+    tmp_path: Path,
+) -> None:
+    settings = get_settings().model_copy(
+        update={"database_url": f"sqlite:///{tmp_path / 'reuse-canonical.db'}"}
+    )
+    workflow = _build_counting_workflow()
+    client = TestClient(
+        create_app(container=build_container(settings=settings, workflow=workflow))
+    )
+
+    payload = {
+        "title": "Canonical Source",
+        "script_text": "Scene: Canonical\nRiya: Why now?\nArjun: Because the truth changed.",
+    }
+
+    first = client.post("/api/v1/analysis/runs", json=payload)
+    assert first.status_code == 202
+    first_handle = first.json()
+
+    second = client.post(
+        "/api/v1/analysis/runs",
+        json={**payload, "title": "First Duplicate"},
+    )
+    assert second.status_code == 202
+    second_handle = second.json()
+    assert second_handle["reused_from_run_id"] == first_handle["run_id"]
+
+    third = client.post(
+        "/api/v1/analysis/runs",
+        json={**payload, "title": "Second Duplicate"},
+    )
+    assert third.status_code == 202
+    third_handle = third.json()
+    assert third_handle["reused_from_run_id"] == first_handle["run_id"]
+    assert third_handle["reused_from_run_id"] != second_handle["run_id"]
+    assert workflow.calls == 1
+
+
 def test_queued_duplicate_submission_collapses_onto_single_in_flight_execution(
     tmp_path: Path,
 ) -> None:
@@ -179,6 +230,89 @@ def test_queued_duplicate_submission_collapses_onto_single_in_flight_execution(
     assert second_drain.json()["processed"] == 0
 
 
+@dataclass(slots=True)
+class _RaceCompletingRunRepository(InMemoryAnalysisRunRepository):
+    artifact_repository: InMemoryAnalysisArtifactRepository
+    source_run_id: object
+    source_artifact: object
+    completed: bool = False
+
+    def __post_init__(self) -> None:
+        InMemoryAnalysisRunRepository.__init__(self)
+
+    def save(self, run: AnalysisRunRecord) -> None:
+        InMemoryAnalysisRunRepository.save(self, run)
+        if (
+            not self.completed
+            and run.reused_from_run_id == self.source_run_id
+        ):
+            self.update_status(self.source_run_id, RunStatus.COMPLETED)
+            self.artifact_repository.save(self.source_run_id, self.source_artifact)
+            self.completed = True
+
+
+@dataclass(slots=True)
+class _NoOpDispatcher:
+    def dispatch(self, run: AnalysisRunRecord) -> None:
+        _ = run
+
+
+def test_in_flight_attach_is_reconciled_when_source_completes_during_submission() -> None:
+    settings = get_settings()
+    fingerprint_service = ExecutionFingerprintService(
+        llm_gateway=_Gateway(),
+        settings=settings,
+    )
+    workflow = _build_counting_workflow().delegate
+    artifact_repository = InMemoryAnalysisArtifactRepository()
+    agent_run_repository = InMemoryAgentRunRepository()
+
+    script_text = "Scene: Race\nA: Why now?\nB: Because the source finished mid-submit."
+    execution_fingerprint = fingerprint_service.compute(
+        script_text=script_text,
+        source_warnings=(),
+    )
+    source_run = AnalysisRunRecord(
+        run_id=uuid4(),
+        script_id=uuid4(),
+        revision_id=uuid4(),
+        execution_fingerprint=execution_fingerprint,
+        title="Source",
+        script_text=script_text,
+        status=RunStatus.RUNNING,
+        source_type=SourceType.TEXT,
+    )
+    source_artifact = workflow.execute(source_run)
+    run_repository = _RaceCompletingRunRepository(
+        artifact_repository=artifact_repository,
+        source_run_id=source_run.run_id,
+        source_artifact=source_artifact,
+    )
+    run_repository.save(source_run)
+
+    service = RunSubmissionService(
+        repository=run_repository,
+        artifact_repository=artifact_repository,
+        agent_run_repository=agent_run_repository,
+        dispatcher=_NoOpDispatcher(),
+        fingerprint_service=fingerprint_service,
+        settings=settings,
+    )
+
+    handle = service.submit(
+        SubmitAnalysisRunCommand(
+            script_text=script_text,
+            title="Dependent",
+        )
+    )
+
+    assert handle.status in {RunStatus.COMPLETED, RunStatus.PARTIAL}
+    assert handle.reused_from_run_id == source_run.run_id
+    dependent_artifact = artifact_repository.get(handle.run_id)
+    assert dependent_artifact is not None
+    assert dependent_artifact.summary == source_artifact.summary
+
+
 def test_normalized_candidate_is_recorded_but_run_is_recomputed(
     tmp_path: Path,
 ) -> None:
@@ -219,3 +353,20 @@ def test_normalized_candidate_is_recorded_but_run_is_recomputed(
     assert detail_body["reused_from_run_id"] is None
     assert detail_body["normalized_candidate_run_id"] == base_handle["run_id"]
     assert workflow.calls == 2
+@dataclass(frozen=True)
+class _Gateway(LLMGateway):
+    @property
+    def backend_name(self) -> str:
+        return "heuristic"
+
+    @property
+    def model_name(self) -> str | None:
+        return None
+
+    def has_live_inference(self) -> bool:
+        return False
+
+    def predict(self, *, signature: object, inputs: dict[str, object]) -> object | None:
+        _ = signature
+        _ = inputs
+        return None

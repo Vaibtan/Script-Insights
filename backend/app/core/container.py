@@ -1,13 +1,18 @@
 from dataclasses import dataclass
 
-from app.db.session import create_session_factory
-from app.agents.dspy_config import configure_dspy_for_settings
+from app.agents.llm_gateway import DSPyLLMGateway
+from app.agents.llm_gateway import LLMGateway
 from app.agents.registry import DSPyProgramRegistry
 from app.agents.registry import ProgramRegistry
+from app.db.session import create_session_factory
 from app.core.settings import Settings
 from app.core.settings import get_settings
+from app.evaluation.critic import CriticEvaluator
 from app.repositories.analysis_artifacts import AnalysisArtifactRepository
+from app.repositories.agent_runs import AgentRunRepository
 from app.repositories.analysis_runs import AnalysisRunRepository
+from app.repositories.in_memory import InMemoryAgentRunRepository
+from app.repositories.sqlalchemy_agent_runs import SqlAlchemyAgentRunRepository
 from app.repositories.sqlalchemy import SqlAlchemyAnalysisArtifactRepository
 from app.repositories.sqlalchemy import SqlAlchemyAnalysisRunRepository
 from app.repositories.sqlalchemy_gateway import SqlAlchemyPersistenceGateway
@@ -31,8 +36,10 @@ from app.services.workflow import AnalysisWorkflowExecutor
 @dataclass(slots=True)
 class AppContainer:
     settings: Settings
+    llm_gateway: LLMGateway
     run_repository: AnalysisRunRepository
     artifact_repository: AnalysisArtifactRepository
+    agent_run_repository: AgentRunRepository
     workflow: AnalysisWorkflowExecutor
     run_queue: RunQueue
     run_queue_processor: RunQueueProcessor
@@ -48,11 +55,12 @@ def build_container(
     settings: Settings | None = None,
     run_repository: AnalysisRunRepository | None = None,
     artifact_repository: AnalysisArtifactRepository | None = None,
+    agent_run_repository: AgentRunRepository | None = None,
     program_registry: ProgramRegistry | None = None,
     workflow: AnalysisWorkflowExecutor | None = None,
 ) -> AppContainer:
     resolved_settings = settings or get_settings()
-    configure_dspy_for_settings(resolved_settings)
+    llm_gateway = DSPyLLMGateway(resolved_settings)
     sqlalchemy_gateway = (
         SqlAlchemyPersistenceGateway(
             create_session_factory(resolved_settings.database_url)
@@ -81,25 +89,39 @@ def build_container(
     else:
         resolved_artifact_repository = artifact_repository
 
+    if agent_run_repository is None:
+        if sqlalchemy_gateway is None:
+            resolved_agent_run_repository = InMemoryAgentRunRepository()
+        else:
+            resolved_agent_run_repository = SqlAlchemyAgentRunRepository(
+                gateway=sqlalchemy_gateway
+            )
+    else:
+        resolved_agent_run_repository = agent_run_repository
+
     if workflow is None:
-        resolved_program_registry = program_registry or DSPyProgramRegistry()
+        resolved_program_registry = program_registry or DSPyProgramRegistry(
+            gateway=llm_gateway
+        )
         workflow = AnalysisWorkflow(
             normalizer=ScriptNormalizer(),
+            llm_gateway=llm_gateway,
             summary_program=resolved_program_registry.create_summary_program(),
             emotion_program=resolved_program_registry.create_emotion_program(),
             engagement_program=resolved_program_registry.create_engagement_program(),
             recommendation_program=resolved_program_registry.create_recommendation_program(),
             cliffhanger_program=resolved_program_registry.create_cliffhanger_program(),
-            evaluator=AnalysisEvaluator(),
+            evaluator=AnalysisEvaluator(critic=CriticEvaluator()),
         )
 
-    fingerprint_service = ExecutionFingerprintService(resolved_settings)
+    fingerprint_service = ExecutionFingerprintService(llm_gateway=llm_gateway, settings=resolved_settings)
     run_queue = RepositoryBackedRunQueue(run_repository=resolved_run_repository)
     run_queue_processor = RunQueueProcessor(
         queue=run_queue,
         workflow=workflow,
         run_repository=resolved_run_repository,
         artifact_repository=resolved_artifact_repository,
+        agent_run_repository=resolved_agent_run_repository,
         fingerprint_service=fingerprint_service,
     )
     if resolved_settings.execution_mode == "queued":
@@ -109,11 +131,13 @@ def build_container(
             workflow=workflow,
             run_repository=resolved_run_repository,
             artifact_repository=resolved_artifact_repository,
+            agent_run_repository=resolved_agent_run_repository,
             fingerprint_service=fingerprint_service,
         )
     run_submission_service = RunSubmissionService(
         repository=resolved_run_repository,
         artifact_repository=resolved_artifact_repository,
+        agent_run_repository=resolved_agent_run_repository,
         dispatcher=dispatcher,
         fingerprint_service=fingerprint_service,
         settings=resolved_settings,
@@ -122,6 +146,7 @@ def build_container(
     run_query_service = RunQueryService(
         run_repository=resolved_run_repository,
         artifact_repository=resolved_artifact_repository,
+        agent_run_repository=resolved_agent_run_repository,
         settings=resolved_settings,
     )
     run_history_service = RunHistoryService(
@@ -136,8 +161,10 @@ def build_container(
 
     return AppContainer(
         settings=resolved_settings,
+        llm_gateway=llm_gateway,
         run_repository=resolved_run_repository,
         artifact_repository=resolved_artifact_repository,
+        agent_run_repository=resolved_agent_run_repository,
         workflow=workflow,
         run_queue=run_queue,
         run_queue_processor=run_queue_processor,

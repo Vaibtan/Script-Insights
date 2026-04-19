@@ -11,11 +11,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import AnalysisArtifactModel
+from app.db.models import AgentRunModel
 from app.db.models import AnalysisRunModel
 from app.db.models import NormalizedScriptModel
 from app.db.models import ScriptModel
 from app.db.models import ScriptRevisionModel
 from app.db.models import SourceDocumentModel
+from app.domain.agent_runs import AgentRunRecord
+from app.domain.agent_runs import AgentRunStatus
 from app.domain.analysis_artifacts import AnalysisArtifact
 from app.domain.analysis_runs import AnalysisRunRecord
 from app.domain.analysis_runs import RunStatus
@@ -100,6 +103,7 @@ class SqlAlchemyPersistenceGateway:
                 select(AnalysisRunModel)
                 .where(
                     AnalysisRunModel.execution_fingerprint == execution_fingerprint,
+                    AnalysisRunModel.reused_from_run_id.is_(None),
                     AnalysisRunModel.status.in_(
                         [RunStatus.COMPLETED.value, RunStatus.PARTIAL.value]
                     ),
@@ -242,9 +246,61 @@ class SqlAlchemyPersistenceGateway:
                     engagement_json=artifact_model.engagement_json,
                     recommendations_json=artifact_model.recommendations_json,
                     cliffhanger_json=artifact_model.cliffhanger_json,
+                    critic_json=artifact_model.critic_json,
                     warnings_json=artifact_model.warnings_json,
                 )
             )
+
+    def save_agent_runs(
+        self,
+        run_id: UUID,
+        agent_runs: tuple[AgentRunRecord, ...],
+    ) -> None:
+        with self.session_factory() as session:
+            session.query(AgentRunModel).filter(
+                AgentRunModel.run_id == str(run_id)
+            ).delete()
+            for item in agent_runs:
+                session.add(
+                    AgentRunModel(
+                        run_id=str(run_id),
+                        agent_name=item.agent_name,
+                        status=item.status.value,
+                        backend=item.backend,
+                        model_name=item.model_name,
+                        started_at=item.started_at,
+                        completed_at=item.completed_at,
+                        latency_ms=item.latency_ms,
+                        warnings_json=list(item.warnings),
+                        failure_message=item.failure_message,
+                    )
+                )
+            session.commit()
+
+    def list_agent_runs(self, run_id: UUID) -> tuple[AgentRunRecord, ...]:
+        with self.session_factory() as session:
+            rows = session.scalars(
+                select(AgentRunModel)
+                .where(AgentRunModel.run_id == str(run_id))
+                .order_by(AgentRunModel.started_at.asc(), AgentRunModel.agent_name.asc())
+            ).all()
+            return tuple(
+                AgentRunRecord(
+                    agent_name=row.agent_name,
+                    status=AgentRunStatus(row.status),
+                    backend=row.backend,
+                    model_name=row.model_name,
+                    started_at=row.started_at,
+                    completed_at=row.completed_at,
+                    latency_ms=row.latency_ms,
+                    warnings=tuple(row.warnings_json or []),
+                    failure_message=row.failure_message,
+                )
+                for row in rows
+            )
+
+    def clone_agent_runs(self, source_run_id: UUID, target_run_id: UUID) -> None:
+        self.save_agent_runs(target_run_id, self.list_agent_runs(source_run_id))
 
     def _hydrate_run(
         self,
@@ -302,6 +358,7 @@ class SqlAlchemyPersistenceGateway:
                     engagement_json=payload.engagement_json,
                     recommendations_json=payload.recommendations_json,
                     cliffhanger_json=payload.cliffhanger_json,
+                    critic_json=payload.critic_json,
                     warnings_json=payload.warnings_json,
                 )
             )
@@ -312,4 +369,5 @@ class SqlAlchemyPersistenceGateway:
         artifact_model.engagement_json = payload.engagement_json
         artifact_model.recommendations_json = payload.recommendations_json
         artifact_model.cliffhanger_json = payload.cliffhanger_json
+        artifact_model.critic_json = payload.critic_json
         artifact_model.warnings_json = payload.warnings_json

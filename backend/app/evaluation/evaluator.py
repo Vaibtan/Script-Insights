@@ -2,6 +2,7 @@ from dataclasses import dataclass, replace
 
 from app.domain.analysis_artifacts import AnalysisArtifact
 from app.domain.evaluation import AnalysisWarning
+from app.evaluation.critic import CriticEvaluator
 
 _ENGAGEMENT_FACTORS = {"hook", "conflict", "tension", "pacing", "stakes", "payoff"}
 _RECOMMENDATION_CATEGORIES = {"pacing", "dialogue", "conflict", "emotional_impact"}
@@ -9,6 +10,8 @@ _RECOMMENDATION_CATEGORIES = {"pacing", "dialogue", "conflict", "emotional_impac
 
 @dataclass(slots=True)
 class AnalysisEvaluator:
+    critic: CriticEvaluator | None = None
+
     def evaluate(self, artifact: AnalysisArtifact) -> AnalysisArtifact:
         warnings = list(artifact.warnings)
         evaluated = artifact
@@ -70,7 +73,13 @@ class AnalysisEvaluator:
                 )
                 evaluated = replace(evaluated, emotion=None)
 
-        return replace(evaluated, warnings=tuple(warnings))
+        evaluated = replace(evaluated, warnings=tuple(warnings))
+        if self.critic is None:
+            return evaluated
+        return replace(
+            evaluated,
+            critic_assessment=self.critic.assess(evaluated),
+        )
 
     @staticmethod
     def _is_valid_engagement(overall_score: float, factors: dict[str, float]) -> bool:

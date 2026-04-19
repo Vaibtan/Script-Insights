@@ -81,6 +81,41 @@ describe("run dashboard", () => {
               },
             ],
           },
+          critic_assessment: {
+            score: 88,
+            summary: "Strong analytical coverage with grounded signals.",
+            issues: [
+              {
+                code: "guardrail_warnings",
+                message: "Guardrails adjusted one or more agent outputs.",
+                component: "evaluation",
+              },
+            ],
+          },
+          agent_runs: [
+            {
+              agent_name: "summary",
+              status: "completed",
+              backend: "heuristic",
+              model_name: null,
+              started_at: "2026-04-19T10:00:00.000Z",
+              completed_at: "2026-04-19T10:00:00.020Z",
+              latency_ms: 20,
+              warnings: ["heuristic_execution"],
+              failure_message: null,
+            },
+            {
+              agent_name: "emotion",
+              status: "completed",
+              backend: "heuristic",
+              model_name: null,
+              started_at: "2026-04-19T10:00:00.021Z",
+              completed_at: "2026-04-19T10:00:00.040Z",
+              latency_ms: 19,
+              warnings: ["heuristic_execution"],
+              failure_message: null,
+            },
+          ],
           warnings: [
             {
               code: "low_confidence",
@@ -121,5 +156,10 @@ describe("run dashboard", () => {
       "href",
       "/runs/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     );
+    expect(screen.getByText(/Quality assessment/i)).toBeInTheDocument();
+    expect(screen.getByText(/Strong analytical coverage/i)).toBeInTheDocument();
+    expect(screen.getByText(/Agent runs/i)).toBeInTheDocument();
+    expect(screen.getByText(/summary · completed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Latency 20 ms/i)).toBeInTheDocument();
   });
 });

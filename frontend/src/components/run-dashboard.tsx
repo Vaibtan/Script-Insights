@@ -72,6 +72,8 @@ export function RunDashboard({ runId }: Props) {
   const normalizationWarnings = run.normalized_script?.warnings ?? [];
   const factorEntries = Object.entries(run.engagement?.factors ?? {});
   const topFactors = factorEntries.slice(0, 4);
+  const criticAssessment = run.critic_assessment ?? null;
+  const agentRuns = run.agent_runs ?? [];
   const hasReuseMetadata =
     run.reused_from_run_id !== null || run.normalized_candidate_run_id !== null;
 
@@ -139,11 +141,68 @@ export function RunDashboard({ runId }: Props) {
         </section>
       ) : null}
 
+      {criticAssessment ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Critic review</p>
+              <h2>Quality assessment</h2>
+            </div>
+          </div>
+          <div className="recommendation-list">
+            <article className="recommendation-card">
+              <span className="recommendation-card__tag">Critic score</span>
+              <strong>{formatScore(criticAssessment.score)}</strong>
+              <p>{criticAssessment.summary}</p>
+            </article>
+            {criticAssessment.issues.map((issue) => (
+              <article key={`${issue.component}-${issue.code}`} className="recommendation-card">
+                <span className="recommendation-card__tag">{issue.component}</span>
+                <strong>{issue.code}</strong>
+                <p>{issue.message}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {run.failure_message ? (
         <article className="panel warning-panel">
           <h2>Failure</h2>
           <p>{run.failure_message}</p>
         </article>
+      ) : null}
+
+      {agentRuns.length > 0 ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Execution trace</p>
+              <h2>Agent runs</h2>
+            </div>
+          </div>
+          <ul className="recommendation-list">
+            {agentRuns.map((agentRun) => (
+              <li
+                key={`${agentRun.agent_name}-${agentRun.started_at}`}
+                className="recommendation-card"
+              >
+                <span className="recommendation-card__tag">{agentRun.backend}</span>
+                <strong>
+                  {agentRun.agent_name} · {agentRun.status}
+                </strong>
+                <p>
+                  Latency {agentRun.latency_ms} ms
+                  {agentRun.model_name ? ` · ${agentRun.model_name}` : ""}
+                </p>
+                {agentRun.warnings.length > 0 ? (
+                  <p>{agentRun.warnings.join(", ")}</p>
+                ) : null}
+                {agentRun.failure_message ? <p>{agentRun.failure_message}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <section className="metrics-grid">

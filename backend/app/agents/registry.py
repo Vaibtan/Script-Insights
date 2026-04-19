@@ -6,6 +6,7 @@ from app.agents.dspy_programs import DSPyEngagementProgram
 from app.agents.dspy_programs import DSPyEmotionProgram
 from app.agents.dspy_programs import DSPyRecommendationProgram
 from app.agents.dspy_programs import DSPySummaryProgram
+from app.agents.llm_gateway import LLMGateway
 from app.agents.protocols import CliffhangerProgram
 from app.agents.protocols import EngagementProgram
 from app.agents.protocols import EmotionProgram
@@ -32,17 +33,19 @@ class ProgramRegistry(Protocol):
 
 @dataclass(slots=True)
 class DSPyProgramRegistry(ProgramRegistry):
+    gateway: LLMGateway
+
     def create_summary_program(self) -> SummaryProgram:
-        return DSPySummaryProgram()
+        return DSPySummaryProgram(gateway=self.gateway)
 
     def create_emotion_program(self) -> EmotionProgram:
-        return DSPyEmotionProgram()
+        return DSPyEmotionProgram(gateway=self.gateway)
 
     def create_engagement_program(self) -> EngagementProgram:
-        return DSPyEngagementProgram()
+        return DSPyEngagementProgram(gateway=self.gateway)
 
     def create_recommendation_program(self) -> RecommendationProgram:
-        return DSPyRecommendationProgram()
+        return DSPyRecommendationProgram(gateway=self.gateway)
 
     def create_cliffhanger_program(self) -> CliffhangerProgram:
-        return DSPyCliffhangerProgram()
+        return DSPyCliffhangerProgram(gateway=self.gateway)

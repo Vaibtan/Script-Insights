@@ -60,6 +60,28 @@ export type AnalysisWarningPayload = {
   component: string;
 };
 
+export type CriticAssessmentPayload = {
+  score: number;
+  summary: string;
+  issues: Array<{
+    code: string;
+    message: string;
+    component: string;
+  }>;
+};
+
+export type AgentRunPayload = {
+  agent_name: string;
+  status: "completed" | "failed" | "skipped";
+  backend: string;
+  model_name: string | null;
+  started_at: string;
+  completed_at: string;
+  latency_ms: number;
+  warnings: string[];
+  failure_message: string | null;
+};
+
 export type NormalizationWarningPayload = {
   code: string;
   message: string;
@@ -96,6 +118,8 @@ export type AnalysisRunDetailResponse = {
   engagement: EngagementPayload | null;
   recommendations: RecommendationPayload[];
   cliffhanger: CliffhangerPayload | null;
+  critic_assessment: CriticAssessmentPayload | null;
+  agent_runs: AgentRunPayload[];
   warnings: AnalysisWarningPayload[];
 };
 

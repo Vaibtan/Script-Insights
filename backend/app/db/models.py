@@ -114,6 +114,24 @@ class AnalysisArtifactModel(Base):
         JSON, nullable=False, default=list
     )
     cliffhanger_json: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    critic_json: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
     warnings_json: Mapped[list[dict[str, str]]] = mapped_column(
         JSON, nullable=False, default=list
     )
+
+
+class AgentRunModel(Base):
+    __tablename__ = "agent_runs"
+
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("analysis_runs.run_id"), primary_key=True
+    )
+    agent_name: Mapped[str] = mapped_column(String(64), primary_key=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    backend: Mapped[str] = mapped_column(String(32), nullable=False)
+    model_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    latency_ms: Mapped[int] = mapped_column(nullable=False)
+    warnings_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    failure_message: Mapped[str | None] = mapped_column(Text, nullable=True)

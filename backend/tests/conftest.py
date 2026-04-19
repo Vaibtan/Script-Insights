@@ -11,6 +11,7 @@ if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.core.settings import reset_settings_cache
+from app.agents.llm_gateway import reset_llm_gateway_state
 
 
 @pytest.fixture()
@@ -34,8 +35,10 @@ def reset_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GROQ_API_KEY", "")
     if "dspy" in sys.modules:
         sys.modules["dspy"].settings.configure(lm=None)
+    reset_llm_gateway_state()
     reset_settings_cache()
     yield
     if "dspy" in sys.modules:
         sys.modules["dspy"].settings.configure(lm=None)
+    reset_llm_gateway_state()
     reset_settings_cache()

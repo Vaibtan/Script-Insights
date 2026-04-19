@@ -1,9 +1,11 @@
 from dataclasses import replace
 from uuid import UUID
 
+from app.domain.agent_runs import AgentRunRecord
 from app.domain.analysis_artifacts import AnalysisArtifact
 from app.domain.analysis_runs import AnalysisRunRecord
 from app.domain.analysis_runs import RunStatus
+from app.repositories.agent_runs import AgentRunRepository
 from app.repositories.analysis_artifacts import AnalysisArtifactRepository
 from app.repositories.analysis_runs import AnalysisRunRepository
 
@@ -56,6 +58,7 @@ class InMemoryAnalysisRunRepository(AnalysisRunRepository):
             run
             for run in self._runs.values()
             if run.execution_fingerprint == execution_fingerprint
+            and run.reused_from_run_id is None
             and run.status in {RunStatus.COMPLETED, RunStatus.PARTIAL}
         ]
         if not matches:
@@ -136,3 +139,17 @@ class InMemoryAnalysisArtifactRepository(AnalysisArtifactRepository):
 
     def get(self, run_id: UUID) -> AnalysisArtifact | None:
         return self._artifacts.get(run_id)
+
+
+class InMemoryAgentRunRepository(AgentRunRepository):
+    def __init__(self) -> None:
+        self._agent_runs: dict[UUID, tuple[AgentRunRecord, ...]] = {}
+
+    def save(self, run_id: UUID, agent_runs: tuple[AgentRunRecord, ...]) -> None:
+        self._agent_runs[run_id] = agent_runs
+
+    def list_by_run(self, run_id: UUID) -> tuple[AgentRunRecord, ...]:
+        return self._agent_runs.get(run_id, ())
+
+    def clone(self, source_run_id: UUID, target_run_id: UUID) -> None:
+        self._agent_runs[target_run_id] = self._agent_runs.get(source_run_id, ())

@@ -4,6 +4,7 @@ from collections.abc import Sequence
 
 import dspy
 
+from app.agents.llm_gateway import LLMGateway
 from app.agents.dspy_runtime import DSPyPredictionRunner
 from app.agents.dspy_runtime import PredictionParser
 from app.agents.heuristic_programs import HeuristicCliffhangerProgram
@@ -182,12 +183,17 @@ class _CliffhangerParser(PredictionParser[CliffhangerResult]):
 
 
 class DSPySummaryProgram(SummaryProgram):
-    def __init__(self, fallback: SummaryProgram | None = None) -> None:
+    def __init__(
+        self,
+        gateway: LLMGateway,
+        fallback: SummaryProgram | None = None,
+    ) -> None:
         self.fallback = fallback or HeuristicSummaryProgram()
         self._runner = DSPyPredictionRunner(
             signature=_SummarySignature,
             fallback_executor=self.fallback.summarize,
             parser=_SummaryParser(),
+            gateway=gateway,
         )
 
     def summarize(self, normalized_script: NormalizedScript) -> SummaryResult:
@@ -195,12 +201,17 @@ class DSPySummaryProgram(SummaryProgram):
 
 
 class DSPyEmotionProgram(EmotionProgram):
-    def __init__(self, fallback: EmotionProgram | None = None) -> None:
+    def __init__(
+        self,
+        gateway: LLMGateway,
+        fallback: EmotionProgram | None = None,
+    ) -> None:
         self.fallback = fallback or HeuristicEmotionProgram()
         self._runner = DSPyPredictionRunner(
             signature=_EmotionSignature,
             fallback_executor=self.fallback.analyze_emotion,
             parser=_EmotionParser(),
+            gateway=gateway,
         )
 
     def analyze_emotion(self, normalized_script: NormalizedScript) -> EmotionResult:
@@ -208,12 +219,17 @@ class DSPyEmotionProgram(EmotionProgram):
 
 
 class DSPyEngagementProgram(EngagementProgram):
-    def __init__(self, fallback: EngagementProgram | None = None) -> None:
+    def __init__(
+        self,
+        gateway: LLMGateway,
+        fallback: EngagementProgram | None = None,
+    ) -> None:
         self.fallback = fallback or HeuristicEngagementProgram()
         self._runner = DSPyPredictionRunner(
             signature=_EngagementSignature,
             fallback_executor=self.fallback.score_engagement,
             parser=_EngagementParser(),
+            gateway=gateway,
         )
 
     def score_engagement(self, normalized_script: NormalizedScript) -> EngagementResult:
@@ -221,12 +237,17 @@ class DSPyEngagementProgram(EngagementProgram):
 
 
 class DSPyRecommendationProgram(RecommendationProgram):
-    def __init__(self, fallback: RecommendationProgram | None = None) -> None:
+    def __init__(
+        self,
+        gateway: LLMGateway,
+        fallback: RecommendationProgram | None = None,
+    ) -> None:
         self.fallback = fallback or HeuristicRecommendationProgram()
         self._runner = DSPyPredictionRunner(
             signature=_RecommendationSignature,
             fallback_executor=self.fallback.suggest_improvements,
             parser=_RecommendationParser(),
+            gateway=gateway,
         )
 
     def suggest_improvements(
@@ -236,12 +257,17 @@ class DSPyRecommendationProgram(RecommendationProgram):
 
 
 class DSPyCliffhangerProgram(CliffhangerProgram):
-    def __init__(self, fallback: CliffhangerProgram | None = None) -> None:
+    def __init__(
+        self,
+        gateway: LLMGateway,
+        fallback: CliffhangerProgram | None = None,
+    ) -> None:
         self.fallback = fallback or HeuristicCliffhangerProgram()
         self._runner = DSPyPredictionRunner(
             signature=_CliffhangerSignature,
             fallback_executor=self.fallback.detect_cliffhanger,
             parser=_CliffhangerParser(),
+            gateway=gateway,
         )
 
     def detect_cliffhanger(

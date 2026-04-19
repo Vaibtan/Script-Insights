@@ -1,9 +1,5 @@
 AI Engineer Assignment Bullet – Generative AI & Content Intelligence 
 
-Timeline: 2–3 days 
-
-Submission: GitHub repository with README and a short demo video 
-
 Overview 
 
 At Bullet we are building AI systems that understand and evaluate storytelling. Our platform focuses on short-form scripted content, and one of the core problems we solve is helping creators and internal teams understand the quality and engagement potential of scripts. 

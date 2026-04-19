@@ -2,6 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.domain.agent_runs import AgentRunStatus
 from app.domain.analysis_runs import RunStatus
 
 
@@ -100,6 +101,30 @@ class AnalysisWarningResponse(BaseModel):
     component: str
 
 
+class CriticIssueResponse(BaseModel):
+    code: str
+    message: str
+    component: str
+
+
+class CriticAssessmentResponse(BaseModel):
+    score: float
+    summary: str
+    issues: list[CriticIssueResponse]
+
+
+class AgentRunResponse(BaseModel):
+    agent_name: str
+    status: AgentRunStatus
+    backend: str
+    model_name: str | None
+    started_at: str
+    completed_at: str
+    latency_ms: int
+    warnings: list[str]
+    failure_message: str | None
+
+
 class AnalysisRunDetailResponse(BaseModel):
     result_version: str
     run_id: UUID
@@ -115,6 +140,8 @@ class AnalysisRunDetailResponse(BaseModel):
     engagement: EngagementResponse | None
     recommendations: list[RecommendationResponse]
     cliffhanger: CliffhangerResponse | None
+    critic_assessment: CriticAssessmentResponse | None
+    agent_runs: list[AgentRunResponse]
     warnings: list[AnalysisWarningResponse]
 
 

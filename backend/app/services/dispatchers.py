@@ -4,6 +4,7 @@ from uuid import UUID
 
 from app.domain.analysis_runs import AnalysisRunRecord
 from app.domain.analysis_runs import RunStatus
+from app.repositories.agent_runs import AgentRunRepository
 from app.repositories.analysis_artifacts import AnalysisArtifactRepository
 from app.repositories.analysis_runs import AnalysisRunRepository
 from app.services.fingerprints import ExecutionFingerprintService
@@ -26,6 +27,7 @@ def _fan_out_reused_result(
     final_status: RunStatus,
     failure_message: str | None,
     normalized_content_fingerprint: str | None,
+    agent_run_repository: AgentRunRepository,
     artifact_repository: AnalysisArtifactRepository,
     run_repository: AnalysisRunRepository,
 ) -> None:
@@ -35,6 +37,7 @@ def _fan_out_reused_result(
     for dependent_run in run_repository.list_reuse_dependents(source_run_id):
         if source_artifact is not None:
             artifact_repository.save(dependent_run.run_id, source_artifact)
+        agent_run_repository.clone(source_run_id, dependent_run.run_id)
         run_repository.update_status(
             dependent_run.run_id,
             final_status,
@@ -54,6 +57,7 @@ def execute_run_workflow(
     workflow: AnalysisWorkflowExecutor,
     run_repository: AnalysisRunRepository,
     artifact_repository: AnalysisArtifactRepository,
+    agent_run_repository: AgentRunRepository,
     fingerprint_service: ExecutionFingerprintService,
 ) -> None:
     logger = logging.getLogger("app.services.reuse")
@@ -71,6 +75,7 @@ def execute_run_workflow(
             final_status=RunStatus.FAILED,
             failure_message=str(exc),
             normalized_content_fingerprint=run.normalized_content_fingerprint,
+            agent_run_repository=agent_run_repository,
             artifact_repository=artifact_repository,
             run_repository=run_repository,
         )
@@ -84,6 +89,7 @@ def execute_run_workflow(
         exclude_run_id=run.run_id,
     )
     artifact_repository.save(run.run_id, artifact)
+    agent_run_repository.save(run.run_id, artifact.agent_runs)
     final_status = RunStatus.PARTIAL if artifact.warnings else RunStatus.COMPLETED
     run_repository.update_status(
         run.run_id,
@@ -103,6 +109,7 @@ def execute_run_workflow(
         final_status=final_status,
         failure_message=None,
         normalized_content_fingerprint=normalized_content_fingerprint,
+        agent_run_repository=agent_run_repository,
         artifact_repository=artifact_repository,
         run_repository=run_repository,
     )
@@ -123,11 +130,13 @@ class InlineAnalysisDispatcher(AnalysisDispatcher):
         workflow: AnalysisWorkflowExecutor,
         run_repository: AnalysisRunRepository,
         artifact_repository: AnalysisArtifactRepository,
+        agent_run_repository: AgentRunRepository,
         fingerprint_service: ExecutionFingerprintService,
     ) -> None:
         self._workflow = workflow
         self._run_repository = run_repository
         self._artifact_repository = artifact_repository
+        self._agent_run_repository = agent_run_repository
         self._fingerprint_service = fingerprint_service
 
     def dispatch(self, run: AnalysisRunRecord) -> None:
@@ -136,6 +145,7 @@ class InlineAnalysisDispatcher(AnalysisDispatcher):
             workflow=self._workflow,
             run_repository=self._run_repository,
             artifact_repository=self._artifact_repository,
+            agent_run_repository=self._agent_run_repository,
             fingerprint_service=self._fingerprint_service,
         )
 

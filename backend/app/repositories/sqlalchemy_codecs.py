@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from app.db.models import AnalysisArtifactModel
+from app.domain.evaluation import CriticAssessment
+from app.domain.evaluation import CriticIssue
 from app.db.models import AnalysisRunModel
 from app.db.models import NormalizedScriptModel
 from app.db.models import ScriptModel
@@ -42,6 +44,7 @@ class SerializedAnalysisArtifact:
     engagement_json: dict[str, object] | None
     recommendations_json: list[dict[str, str]]
     cliffhanger_json: dict[str, object] | None
+    critic_json: dict[str, object] | None
     warnings_json: list[dict[str, str]]
 
 
@@ -257,6 +260,46 @@ def _deserialize_cliffhanger(
     )
 
 
+def _serialize_critic(
+    critic_assessment: CriticAssessment | None,
+) -> dict[str, object] | None:
+    if critic_assessment is None:
+        return None
+    return {
+        "score": critic_assessment.score,
+        "summary": critic_assessment.summary,
+        "issues": [
+            {
+                "code": issue.code,
+                "message": issue.message,
+                "component": issue.component,
+            }
+            for issue in critic_assessment.issues
+        ],
+    }
+
+
+def _deserialize_critic(
+    payload: dict[str, object] | None,
+) -> CriticAssessment | None:
+    if payload is None:
+        return None
+    issues = payload.get("issues")
+    issue_items = issues if isinstance(issues, list) else []
+    return CriticAssessment(
+        score=float(payload["score"]),
+        summary=str(payload["summary"]),
+        issues=tuple(
+            CriticIssue(
+                code=str(issue["code"]),
+                message=str(issue["message"]),
+                component=str(issue["component"]),
+            )
+            for issue in issue_items
+        ),
+    )
+
+
 def _serialize_normalized_script(
     normalized_script: NormalizedScript,
 ) -> SerializedNormalizedScript:
@@ -322,6 +365,7 @@ class AnalysisArtifactCodec:
             engagement_json=_serialize_engagement(artifact.engagement),
             recommendations_json=_serialize_recommendations(artifact.recommendations),
             cliffhanger_json=_serialize_cliffhanger(artifact.cliffhanger),
+            critic_json=_serialize_critic(artifact.critic_assessment),
             warnings_json=_serialize_analysis_warnings(artifact.warnings),
         )
 
@@ -333,6 +377,7 @@ class AnalysisArtifactCodec:
             engagement=_deserialize_engagement(payload.engagement_json),
             recommendations=_deserialize_recommendations(payload.recommendations_json),
             cliffhanger=_deserialize_cliffhanger(payload.cliffhanger_json),
+            critic_assessment=_deserialize_critic(payload.critic_json),
             warnings=_deserialize_analysis_warnings(payload.warnings_json),
         )
 

@@ -7,7 +7,9 @@ from app.domain.analysis_outputs import EngagementResult
 from app.domain.analysis_outputs import Recommendation
 from app.domain.analysis_outputs import SummaryResult
 from app.domain.analysis_outputs import CliffhangerResult
+from app.domain.agent_runs import AgentRunRecord
 from app.domain.evaluation import AnalysisWarning
+from app.domain.evaluation import CriticAssessment
 from app.domain.analysis_runs import AnalysisRunRecord
 from app.domain.analysis_runs import RunStatus
 from app.domain.analysis_runs import SourceType
@@ -46,6 +48,8 @@ class AnalysisRunDetail:
     engagement: EngagementResult | None
     recommendations: tuple[Recommendation, ...]
     cliffhanger: CliffhangerResult | None
+    critic_assessment: CriticAssessment | None
+    agent_runs: tuple[AgentRunRecord, ...]
     warnings: tuple[AnalysisWarning, ...]
 
 

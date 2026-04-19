@@ -86,6 +86,19 @@ def _apply_runtime_schema_upgrades(engine: Engine) -> None:
                 )
             )
 
+    if "analysis_artifacts" in inspector.get_table_names():
+        artifact_columns = {
+            column["name"] for column in inspector.get_columns("analysis_artifacts")
+        }
+        if "critic_json" not in artifact_columns:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "ALTER TABLE analysis_artifacts "
+                        "ADD COLUMN critic_json JSON"
+                    )
+                )
+
 
 def create_session_factory(database_url: str) -> Callable[[], Session]:
     cached_factory = _session_factory_cache.get(database_url)
