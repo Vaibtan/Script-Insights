@@ -20,6 +20,7 @@ def test_submit_analysis_run_returns_accepted_with_stable_identifiers(
     assert body["result_version"] == "v1"
     assert body["status"] == "completed"
     assert body["failure_message"] is None
+    assert body["reused_from_run_id"] is None
     assert UUID(body["run_id"])
     assert UUID(body["script_id"])
     assert UUID(body["revision_id"])

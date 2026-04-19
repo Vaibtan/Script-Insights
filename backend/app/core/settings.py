@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     app_name: str = "Script Insights API"
     api_v1_prefix: str = "/api/v1"
     result_version: str = "v1"
+    analysis_fingerprint_version: str = "v1"
+    normalized_fingerprint_version: str = "v1"
     execution_mode: Literal["inline", "queued"] = "inline"
     database_url: str = "sqlite:///./script_insights.db"
     groq_api_key: str | None = None
@@ -25,7 +27,6 @@ class Settings(BaseSettings):
     cors_origins: Annotated[tuple[str, ...], NoDecode] = ("http://localhost:3000",)
 
     model_config = SettingsConfigDict(
-        env_file=DEFAULT_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
@@ -50,7 +51,7 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()
+    return Settings(_env_file=DEFAULT_ENV_FILE)
 
 
 def reset_settings_cache() -> None:

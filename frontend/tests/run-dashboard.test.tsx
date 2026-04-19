@@ -19,6 +19,8 @@ describe("run dashboard", () => {
           revision_id: "33333333-3333-4333-8333-333333333333",
           status: "completed",
           failure_message: null,
+          reused_from_run_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          normalized_candidate_run_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
           normalized_script: {
             scenes: [],
             dialogue_blocks: [],
@@ -108,6 +110,16 @@ describe("run dashboard", () => {
     expect(screen.getByRole("link", { name: /analyze next revision/i })).toHaveAttribute(
       "href",
       "/?script_id=22222222-2222-4222-8222-222222222222",
+    );
+    expect(screen.getByText(/Reused from prior run/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open source run/i })).toHaveAttribute(
+      "href",
+      "/runs/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    );
+    expect(screen.getByText(/Structurally similar prior run/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open candidate run/i })).toHaveAttribute(
+      "href",
+      "/runs/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     );
   });
 });

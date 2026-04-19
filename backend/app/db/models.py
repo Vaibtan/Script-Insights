@@ -64,6 +64,18 @@ class AnalysisRunModel(Base):
     revision_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("script_revisions.id"), nullable=False, index=True
     )
+    execution_fingerprint: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )
+    normalized_content_fingerprint: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
+    reused_from_run_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, index=True
+    )
+    normalized_candidate_run_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, index=True
+    )
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
     script_text: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, index=True)

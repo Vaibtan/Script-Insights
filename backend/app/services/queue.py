@@ -6,6 +6,7 @@ from app.domain.analysis_runs import AnalysisRunRecord
 from app.repositories.analysis_artifacts import AnalysisArtifactRepository
 from app.repositories.analysis_runs import AnalysisRunRepository
 from app.services.dispatchers import execute_run_workflow
+from app.services.fingerprints import ExecutionFingerprintService
 from app.services.workflow import AnalysisWorkflowExecutor
 
 
@@ -43,6 +44,7 @@ class RunQueueProcessor:
     workflow: AnalysisWorkflowExecutor
     run_repository: AnalysisRunRepository
     artifact_repository: AnalysisArtifactRepository
+    fingerprint_service: ExecutionFingerprintService
 
     def drain(self) -> int:
         processed = 0
@@ -58,5 +60,6 @@ class RunQueueProcessor:
                 workflow=self.workflow,
                 run_repository=self.run_repository,
                 artifact_repository=self.artifact_repository,
+                fingerprint_service=self.fingerprint_service,
             )
             processed += 1

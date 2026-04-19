@@ -7,6 +7,7 @@ export type SubmitAnalysisRunResponse = {
   revision_id: string;
   status: RunStatus;
   failure_message: string | null;
+  reused_from_run_id: string | null;
 };
 
 export type EvidenceSpan = {
@@ -71,6 +72,8 @@ export type AnalysisRunDetailResponse = {
   revision_id: string;
   status: RunStatus;
   failure_message: string | null;
+  reused_from_run_id: string | null;
+  normalized_candidate_run_id: string | null;
   normalized_script: {
     scenes: Array<{
       scene_index: number;

@@ -33,6 +33,7 @@ def to_submit_analysis_run_response(
         revision_id=handle.revision_id,
         status=handle.status,
         failure_message=handle.failure_message,
+        reused_from_run_id=handle.reused_from_run_id,
     )
 
 
@@ -140,6 +141,8 @@ def to_analysis_run_detail_response(
         revision_id=detail.run.revision_id,
         status=detail.run.status,
         failure_message=detail.run.failure_message,
+        reused_from_run_id=detail.run.reused_from_run_id,
+        normalized_candidate_run_id=detail.run.normalized_candidate_run_id,
         normalized_script=normalized_script_response,
         summary=summary_response,
         emotion=emotion_response,

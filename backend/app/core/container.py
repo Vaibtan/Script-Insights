@@ -14,6 +14,7 @@ from app.repositories.sqlalchemy_gateway import SqlAlchemyPersistenceGateway
 from app.evaluation.evaluator import AnalysisEvaluator
 from app.services.dispatchers import InlineAnalysisDispatcher
 from app.services.dispatchers import QueuedAnalysisDispatcher
+from app.services.fingerprints import ExecutionFingerprintService
 from app.services.normalization import ScriptNormalizer
 from app.services.pdf_extraction import PdfTextExtractor
 from app.services.queue import RepositoryBackedRunQueue
@@ -92,12 +93,14 @@ def build_container(
             evaluator=AnalysisEvaluator(),
         )
 
+    fingerprint_service = ExecutionFingerprintService(resolved_settings)
     run_queue = RepositoryBackedRunQueue(run_repository=resolved_run_repository)
     run_queue_processor = RunQueueProcessor(
         queue=run_queue,
         workflow=workflow,
         run_repository=resolved_run_repository,
         artifact_repository=resolved_artifact_repository,
+        fingerprint_service=fingerprint_service,
     )
     if resolved_settings.execution_mode == "queued":
         dispatcher = QueuedAnalysisDispatcher(queue=run_queue)
@@ -106,10 +109,13 @@ def build_container(
             workflow=workflow,
             run_repository=resolved_run_repository,
             artifact_repository=resolved_artifact_repository,
+            fingerprint_service=fingerprint_service,
         )
     run_submission_service = RunSubmissionService(
         repository=resolved_run_repository,
+        artifact_repository=resolved_artifact_repository,
         dispatcher=dispatcher,
+        fingerprint_service=fingerprint_service,
         settings=resolved_settings,
     )
     pdf_text_extractor = PdfTextExtractor()

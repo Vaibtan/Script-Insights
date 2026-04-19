@@ -20,6 +20,7 @@ describe("analysis composer", () => {
           revision_id: "33333333-3333-4333-8333-333333333333",
           status: "queued",
           failure_message: null,
+          reused_from_run_id: null,
         }),
         {
           status: 202,
@@ -47,6 +48,37 @@ describe("analysis composer", () => {
     );
   });
 
+  it("surfaces when a submission attaches to an exact in-flight duplicate", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          result_version: "v1",
+          run_id: "11111111-1111-4111-8111-111111111111",
+          script_id: "22222222-2222-4222-8222-222222222222",
+          revision_id: "33333333-3333-4333-8333-333333333333",
+          status: "queued",
+          failure_message: null,
+          reused_from_run_id: "99999999-9999-4999-8999-999999999999",
+        }),
+        {
+          status: 202,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    renderWithProviders(<AnalysisComposer />);
+
+    await userEvent.type(
+      screen.getByLabelText("Script text"),
+      "Scene: Duplicate\nRiya: Why now?\nArjun: Because the system already has this queued.",
+    );
+    await userEvent.click(screen.getByRole("button", { name: /start analysis from text/i }));
+
+    expect(await screen.findByText(/Attached to an active exact-match run/i)).toBeInTheDocument();
+    expect(screen.getByText(/99999999-9999-4999-8999-999999999999/i)).toBeInTheDocument();
+  });
+
   it("submits a new revision into an existing script lineage", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
@@ -57,6 +89,7 @@ describe("analysis composer", () => {
           revision_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
           status: "queued",
           failure_message: null,
+          reused_from_run_id: null,
         }),
         {
           status: 202,

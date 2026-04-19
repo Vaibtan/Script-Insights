@@ -33,6 +33,7 @@ class AnalysisRunHandle:
     revision_id: UUID
     status: RunStatus
     failure_message: str | None
+    reused_from_run_id: UUID | None = None
 
 
 @dataclass(frozen=True)

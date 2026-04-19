@@ -80,13 +80,123 @@ class SqlAlchemyPersistenceGateway:
         with self.session_factory() as session:
             query = (
                 select(AnalysisRunModel)
-                .where(AnalysisRunModel.status == RunStatus.QUEUED.value)
+                .where(
+                    AnalysisRunModel.status == RunStatus.QUEUED.value,
+                    AnalysisRunModel.reused_from_run_id.is_(None),
+                )
                 .order_by(AnalysisRunModel.created_at.asc())
             )
             if limit is not None:
                 query = query.limit(limit)
             rows = session.scalars(query).all()
             return tuple(self._hydrate_run(session, row) for row in rows)
+
+    def find_reusable_run_by_fingerprint(
+        self,
+        execution_fingerprint: str,
+    ) -> AnalysisRunRecord | None:
+        with self.session_factory() as session:
+            row = session.scalar(
+                select(AnalysisRunModel)
+                .where(
+                    AnalysisRunModel.execution_fingerprint == execution_fingerprint,
+                    AnalysisRunModel.status.in_(
+                        [RunStatus.COMPLETED.value, RunStatus.PARTIAL.value]
+                    ),
+                )
+                .order_by(AnalysisRunModel.created_at.desc())
+                .limit(1)
+            )
+            if row is None:
+                return None
+            return self._hydrate_run(session, row)
+
+    def find_in_flight_run_by_fingerprint(
+        self,
+        execution_fingerprint: str,
+    ) -> AnalysisRunRecord | None:
+        with self.session_factory() as session:
+            row = session.scalar(
+                select(AnalysisRunModel)
+                .where(
+                    AnalysisRunModel.execution_fingerprint == execution_fingerprint,
+                    AnalysisRunModel.reused_from_run_id.is_(None),
+                    AnalysisRunModel.status.in_(
+                        [RunStatus.QUEUED.value, RunStatus.RUNNING.value]
+                    ),
+                )
+                .order_by(AnalysisRunModel.created_at.desc())
+                .limit(1)
+            )
+            if row is None:
+                return None
+            return self._hydrate_run(session, row)
+
+    def find_normalized_candidate_run(
+        self,
+        normalized_content_fingerprint: str,
+        *,
+        exclude_run_id: UUID,
+    ) -> AnalysisRunRecord | None:
+        with self.session_factory() as session:
+            row = session.scalar(
+                select(AnalysisRunModel)
+                .where(
+                    AnalysisRunModel.run_id != str(exclude_run_id),
+                    AnalysisRunModel.normalized_content_fingerprint
+                    == normalized_content_fingerprint,
+                    AnalysisRunModel.status.in_(
+                        [RunStatus.COMPLETED.value, RunStatus.PARTIAL.value]
+                    ),
+                )
+                .order_by(AnalysisRunModel.created_at.desc())
+                .limit(1)
+            )
+            if row is None:
+                return None
+            return self._hydrate_run(session, row)
+
+    def list_reuse_dependents(
+        self,
+        reused_from_run_id: UUID,
+    ) -> tuple[AnalysisRunRecord, ...]:
+        with self.session_factory() as session:
+            rows = session.scalars(
+                select(AnalysisRunModel)
+                .where(
+                    AnalysisRunModel.reused_from_run_id == str(reused_from_run_id),
+                    AnalysisRunModel.status.in_(
+                        [RunStatus.QUEUED.value, RunStatus.RUNNING.value]
+                    ),
+                )
+                .order_by(AnalysisRunModel.created_at.asc())
+            ).all()
+            return tuple(self._hydrate_run(session, row) for row in rows)
+
+    def update_analysis_metadata(
+        self,
+        run_id: UUID,
+        *,
+        normalized_content_fingerprint: str | None,
+        reused_from_run_id: UUID | None,
+        normalized_candidate_run_id: UUID | None,
+    ) -> AnalysisRunRecord | None:
+        with self.session_factory() as session:
+            run_model = session.get(AnalysisRunModel, str(run_id))
+            if run_model is None:
+                return None
+            run_model.normalized_content_fingerprint = normalized_content_fingerprint
+            run_model.reused_from_run_id = (
+                str(reused_from_run_id) if reused_from_run_id is not None else None
+            )
+            run_model.normalized_candidate_run_id = (
+                str(normalized_candidate_run_id)
+                if normalized_candidate_run_id is not None
+                else None
+            )
+            session.commit()
+            session.refresh(run_model)
+            return self._hydrate_run(session, run_model)
 
     def save_artifact(self, run_id: UUID, artifact: AnalysisArtifact) -> None:
         payload = self.artifact_codec.serialize(artifact)

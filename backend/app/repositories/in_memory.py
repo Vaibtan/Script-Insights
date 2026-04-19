@@ -37,12 +37,94 @@ class InMemoryAnalysisRunRepository(AnalysisRunRepository):
 
     def list_queued(self, limit: int | None = None) -> tuple[AnalysisRunRecord, ...]:
         runs = sorted(
-            (run for run in self._runs.values() if run.status == RunStatus.QUEUED),
+            (
+                run
+                for run in self._runs.values()
+                if run.status == RunStatus.QUEUED and run.reused_from_run_id is None
+            ),
             key=lambda item: item.created_at,
         )
         if limit is not None:
             runs = runs[:limit]
         return tuple(runs)
+
+    def find_reusable_by_fingerprint(
+        self,
+        execution_fingerprint: str,
+    ) -> AnalysisRunRecord | None:
+        matches = [
+            run
+            for run in self._runs.values()
+            if run.execution_fingerprint == execution_fingerprint
+            and run.status in {RunStatus.COMPLETED, RunStatus.PARTIAL}
+        ]
+        if not matches:
+            return None
+        return max(matches, key=lambda item: item.created_at)
+
+    def find_in_flight_by_fingerprint(
+        self,
+        execution_fingerprint: str,
+    ) -> AnalysisRunRecord | None:
+        matches = [
+            run
+            for run in self._runs.values()
+            if run.execution_fingerprint == execution_fingerprint
+            and run.reused_from_run_id is None
+            and run.status in {RunStatus.QUEUED, RunStatus.RUNNING}
+        ]
+        if not matches:
+            return None
+        return max(matches, key=lambda item: item.created_at)
+
+    def find_normalized_candidate(
+        self,
+        normalized_content_fingerprint: str,
+        *,
+        exclude_run_id: UUID,
+    ) -> AnalysisRunRecord | None:
+        matches = [
+            run
+            for run in self._runs.values()
+            if run.run_id != exclude_run_id
+            and run.normalized_content_fingerprint == normalized_content_fingerprint
+            and run.status in {RunStatus.COMPLETED, RunStatus.PARTIAL}
+        ]
+        if not matches:
+            return None
+        return max(matches, key=lambda item: item.created_at)
+
+    def list_reuse_dependents(
+        self,
+        reused_from_run_id: UUID,
+    ) -> tuple[AnalysisRunRecord, ...]:
+        runs = [
+            run
+            for run in self._runs.values()
+            if run.reused_from_run_id == reused_from_run_id
+            and run.status in {RunStatus.QUEUED, RunStatus.RUNNING}
+        ]
+        return tuple(sorted(runs, key=lambda item: item.created_at))
+
+    def update_analysis_metadata(
+        self,
+        run_id: UUID,
+        *,
+        normalized_content_fingerprint: str | None,
+        reused_from_run_id: UUID | None,
+        normalized_candidate_run_id: UUID | None,
+    ) -> AnalysisRunRecord | None:
+        run = self._runs.get(run_id)
+        if run is None:
+            return None
+        updated = replace(
+            run,
+            normalized_content_fingerprint=normalized_content_fingerprint,
+            reused_from_run_id=reused_from_run_id,
+            normalized_candidate_run_id=normalized_candidate_run_id,
+        )
+        self._runs[run_id] = updated
+        return updated
 
 
 class InMemoryAnalysisArtifactRepository(AnalysisArtifactRepository):

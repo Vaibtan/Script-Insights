@@ -5,8 +5,7 @@ from datetime import UTC, datetime
 import json
 import logging
 
-
-_request_id_context: ContextVar[str] = ContextVar("request_id", default="-")
+_request_id_context: ContextVar[str] = ContextVar("request_id", default = "-")
 _logging_configured = False
 
 

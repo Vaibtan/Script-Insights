@@ -77,6 +77,14 @@ export function AnalysisComposer({ onRunSubmitted, initialScriptId = "" }: Props
   };
 
   const isSubmitting = submitRun.isPending;
+  const isReuseAttached =
+    lastRun !== null &&
+    lastRun.reused_from_run_id !== null &&
+    isPendingRun(lastRun.status);
+  const isCompletedReuse =
+    lastRun !== null &&
+    lastRun.reused_from_run_id !== null &&
+    !isPendingRun(lastRun.status);
 
   return (
     <section className="workspace-shell">
@@ -218,7 +226,7 @@ export function AnalysisComposer({ onRunSubmitted, initialScriptId = "" }: Props
           {lastRun ? (
             <div className="run-state panel panel--success" data-testid="submitted-run">
               <div className="run-state__header">
-                <p className="run-title">
+              <p className="run-title">
                   {isPendingRun(lastRun.status) ? "Run queued" : "Run accepted"}
                 </p>
                 <span className="run-state__status">{lastRun.status}</span>
@@ -226,6 +234,18 @@ export function AnalysisComposer({ onRunSubmitted, initialScriptId = "" }: Props
               <p>
                 Run ID: <code>{lastRun.run_id}</code>
               </p>
+              {isReuseAttached ? (
+                <p className="field-note">
+                  Attached to an active exact-match run:{" "}
+                  <code>{lastRun.reused_from_run_id}</code>
+                </p>
+              ) : null}
+              {isCompletedReuse ? (
+                <p className="field-note">
+                  Reused completed analysis artifacts from{" "}
+                  <code>{lastRun.reused_from_run_id}</code>.
+                </p>
+              ) : null}
               <div className="run-links">
                 <Link href={`/runs/${lastRun.run_id}`}>Open run dashboard</Link>
                 <Link href={`/scripts/${lastRun.script_id}/history`}>View run history</Link>

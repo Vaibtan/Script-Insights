@@ -17,28 +17,29 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 
 ## TDD Working Agreement
 
-- [ ] Write one failing test for one observable behavior before each implementation slice.
-- [ ] Keep each slice vertical: test, minimal implementation, then refactor.
-- [ ] Test public interfaces only: API contracts, service boundaries, and user-visible UI behavior.
-- [ ] Do not write all tests upfront.
-- [ ] Do not call live Groq models from automated tests.
-- [ ] Keep model-dependent tests stubbed and deterministic.
-- [ ] Make one small commit per completed slice where practical.
+- [x] Write one failing test for one observable behavior before each implementation slice.
+- [x] Keep each slice vertical: test, minimal implementation, then refactor.
+- [x] Test public interfaces only: API contracts, service boundaries, and user-visible UI behavior.
+- [x] Do not write all tests upfront.
+- [x] Do not call live Groq models from automated tests.
+- [x] Keep model-dependent tests stubbed and deterministic.
+- [x] Make one small commit per completed slice where practical.
 
 ## Initial Stack Decisions
 
-- [ ] Backend runtime: `Python 3.11+`
-- [ ] Backend web layer: `FastAPI`
-- [ ] Backend schemas: `Pydantic v2`
-- [ ] Persistence: `SQLAlchemy` + `Alembic`
-- [ ] Local DB default: `SQLite`, with schema designed to stay `Postgres`-compatible
-- [ ] Async execution: `ARQ` + `Redis`, with an inline runner for tests
-- [ ] Model provider SDK: `groq`
-- [ ] LLM programming layer: `dspy`
-- [ ] Frontend runtime: `Next.js` App Router + `TypeScript`
-- [ ] Frontend data fetching: `TanStack Query`
-- [ ] Frontend styling: `Tailwind CSS`
-- [ ] Frontend visualization: `Recharts` or equivalent charting library
+- [x] Backend runtime: `Python 3.11+`
+- [x] Backend web layer: `FastAPI`
+- [x] Backend schemas: `Pydantic v2`
+- [x] Persistence: `SQLAlchemy` + `SQLite`
+- [x] Local DB default: `SQLite`, with runtime schema upgrades for local development
+- [x] Async execution: repository-backed durable queue + worker drain or worker CLI, with an inline runner for tests and local sync execution
+- [x] Model provider SDK: `groq`
+- [x] LLM programming layer: `dspy`
+- [x] Backend configuration: `.env`-driven `pydantic-settings`
+- [x] Frontend runtime: `Next.js` App Router + `TypeScript`
+- [x] Frontend data fetching: `TanStack Query`
+- [x] Frontend styling: custom CSS design system
+- [x] Frontend visualization: custom SVG/CSS score rings, factor bars, delta bars, and evidence panels
 
 ## Public Interfaces To Lock First
 
@@ -46,12 +47,16 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 
 - [x] `POST /api/v1/analysis/runs`
   Purpose: submit pasted text or a PDF upload for analysis
+- [x] `POST /api/v1/analysis/runs/upload`
+  Purpose: submit a PDF file with optional `script_id` continuation support
 - [x] `GET /api/v1/analysis/runs/{run_id}`
   Purpose: poll run status and fetch the versioned final result payload using the externally visible async run identifier
 - [x] `GET /api/v1/scripts/{script_id}/runs?revision_id=...&status=...`
   Purpose: list run history for a script across revisions, with optional filters for revision and status
 - [x] `GET /api/v1/scripts/{script_id}/compare?base_run_id=...&target_run_id=...`
   Purpose: compare two selected runs from the same script lineage, typically representing two revisions, and return deltas
+- [x] `POST /api/v1/analysis/workers/drain`
+  Purpose: drain queued runs in local durable-worker mode
 
 ### Frontend Routes
 
@@ -74,6 +79,8 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
   Provider abstraction for Groq-backed calls and future fallback models
 - [x] `DSPyProgramRegistry`
   Owns DSPy signatures and programs for summary, emotion, engagement, suggestions, and cliffhanger analysis
+- [x] `ExecutionFingerprintService`
+  Computes exact execution fingerprints and normalized-content fingerprints for safe reuse and candidate detection
 - [x] `AnalysisEvaluator`
   Validates schema correctness, evidence grounding, score bounds, and partial-result acceptance
 - [x] `RevisionComparisonService`
@@ -224,6 +231,17 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 - [x] GREEN: add structured logging, trace or correlation ids, fixture scripts, and README setup instructions
 - [x] REFACTOR: prune dead paths, remove temporary scaffolding, and simplify configuration
 
+## Completed Extensions After Slice 17
+
+- [x] Refactor backend settings to be `.env`-driven with `pydantic-settings` and example configuration
+- [x] Deepen the DSPy runtime behind a shared execution template and parse-strategy layer
+- [x] Deepen SQLAlchemy persistence behind a shared gateway and codec layer
+- [x] Add exact execution fingerprint reuse for completed or partial prior runs
+- [x] Add normalized-content fingerprint detection for structurally similar prior runs without auto-reusing evidence offsets
+- [x] Add single-flight dedupe for exact queued or running matches while preserving separate run lineage records
+- [x] Surface reuse provenance in the submit workspace and run dashboard via `reused_from_run_id` and `normalized_candidate_run_id`
+- [x] Redesign the frontend with a stronger dashboard visual system, motion polish, empty states, and richer compare deltas
+
 ## DSPy-Specific Checklist
 
 - [x] Define DSPy signatures for `summary`, `emotion`, `engagement`, `recommendations`, and `cliffhanger`
@@ -239,6 +257,7 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 - [x] Explicit contract version field such as `result_version`
 - [x] `run_id` doubles as the externally visible async job identifier in `v1`
 - [x] Explicit run status: `queued`, `running`, `completed`, `partial`, `failed`
+- [x] Reuse provenance metadata: `reused_from_run_id` and `normalized_candidate_run_id`
 - [x] Summary payload with evidence
 - [x] Emotion payload with arc points and dominant emotions
 - [x] Engagement payload with overall score, factor scores, rationale, and confidence
@@ -257,10 +276,12 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 - [x] Backend evaluator tests for malformed outputs and partial-failure behavior
 - [x] Backend persistence tests for revision lineage and run ordering
 - [x] Backend persistence tests for normalized script structure and evidence provenance
+- [x] Backend reuse tests for exact-result reuse, normalized candidate detection, and single-flight in-flight dedupe
 - [x] Frontend tests for submit flow
 - [x] Frontend tests for results dashboard rendering
 - [x] Frontend tests for history dashboard behavior
 - [x] Frontend tests for compare view behavior
+- [x] Frontend tests for reuse provenance states in the workspace and run dashboard
 - [x] Golden fixture smoke tests for end-to-end schema validity
 
 ## Release Readiness Checklist
@@ -270,6 +291,7 @@ Source PRD: [PRD.md](D:/SWE_DEV_NEW/Script-Insights/docs/PRD.md)
 - [x] The system can run locally without calling live models during tests
 - [x] The results dashboard is usable on desktop and mobile
 - [x] Run history and revision compare work from persisted data, not only in-memory state
+- [x] Duplicate exact submissions are deduplicated safely through execution fingerprints and durable reuse metadata
 - [x] Failure states are visible and explainable
 - [x] The repo is organized so the next engineer can extend the agent set safely
 

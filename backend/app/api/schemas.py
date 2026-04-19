@@ -20,6 +20,7 @@ class SubmitAnalysisRunResponse(BaseModel):
     revision_id: UUID
     status: RunStatus
     failure_message: str | None = None
+    reused_from_run_id: UUID | None = None
 
 
 class NormalizationWarningResponse(BaseModel):
@@ -106,6 +107,8 @@ class AnalysisRunDetailResponse(BaseModel):
     revision_id: UUID
     status: RunStatus
     failure_message: str | None
+    reused_from_run_id: UUID | None
+    normalized_candidate_run_id: UUID | None
     normalized_script: NormalizedScriptResponse | None
     summary: SummaryResponse | None
     emotion: EmotionResponse | None

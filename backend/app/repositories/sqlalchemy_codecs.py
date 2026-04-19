@@ -359,6 +359,18 @@ class AnalysisRunGraphCodec:
                 run_id=run_id,
                 script_id=script_id,
                 revision_id=revision_id,
+                execution_fingerprint=run.execution_fingerprint,
+                normalized_content_fingerprint=run.normalized_content_fingerprint,
+                reused_from_run_id=(
+                    str(run.reused_from_run_id)
+                    if run.reused_from_run_id is not None
+                    else None
+                ),
+                normalized_candidate_run_id=(
+                    str(run.normalized_candidate_run_id)
+                    if run.normalized_candidate_run_id is not None
+                    else None
+                ),
                 title=run.title,
                 script_text=run.script_text,
                 status=run.status.value,
@@ -389,6 +401,18 @@ class AnalysisRunGraphCodec:
             run_id=UUID(run_model.run_id),
             script_id=UUID(run_model.script_id),
             revision_id=UUID(run_model.revision_id),
+            execution_fingerprint=run_model.execution_fingerprint,
+            normalized_content_fingerprint=run_model.normalized_content_fingerprint,
+            reused_from_run_id=(
+                UUID(run_model.reused_from_run_id)
+                if run_model.reused_from_run_id is not None
+                else None
+            ),
+            normalized_candidate_run_id=(
+                UUID(run_model.normalized_candidate_run_id)
+                if run_model.normalized_candidate_run_id is not None
+                else None
+            ),
             title=run_model.title,
             script_text=run_model.script_text,
             status=RunStatus(run_model.status),

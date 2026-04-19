@@ -72,6 +72,8 @@ export function RunDashboard({ runId }: Props) {
   const normalizationWarnings = run.normalized_script?.warnings ?? [];
   const factorEntries = Object.entries(run.engagement?.factors ?? {});
   const topFactors = factorEntries.slice(0, 4);
+  const hasReuseMetadata =
+    run.reused_from_run_id !== null || run.normalized_candidate_run_id !== null;
 
   return (
     <section className="dashboard">
@@ -99,6 +101,43 @@ export function RunDashboard({ runId }: Props) {
           <Link href={`/scripts/${run.script_id}/compare`}>Open compare view</Link>
         </div>
       </header>
+
+      {hasReuseMetadata ? (
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Reuse provenance</p>
+              <h2>Execution context</h2>
+            </div>
+          </div>
+          <div className="recommendation-list">
+            {run.reused_from_run_id ? (
+              <article className="recommendation-card">
+                <span className="recommendation-card__tag">Exact reuse</span>
+                <strong>Reused from prior run</strong>
+                <p>
+                  This run resolved against an existing exact-match execution and
+                  inherited its completed artifact set.
+                </p>
+                <Link href={`/runs/${run.reused_from_run_id}`}>Open source run</Link>
+              </article>
+            ) : null}
+            {run.normalized_candidate_run_id ? (
+              <article className="recommendation-card">
+                <span className="recommendation-card__tag">Near match</span>
+                <strong>Structurally similar prior run</strong>
+                <p>
+                  A normalized-content match was detected, but this run was still
+                  recomputed to preserve exact evidence alignment.
+                </p>
+                <Link href={`/runs/${run.normalized_candidate_run_id}`}>
+                  Open candidate run
+                </Link>
+              </article>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {run.failure_message ? (
         <article className="panel warning-panel">
